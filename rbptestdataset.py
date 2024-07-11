@@ -2,7 +2,7 @@ import os
 from torch.utils.data import Dataset, DataLoader
 
 
-class RBPSequenceDataset(Dataset):
+class RBPTestDataset(Dataset):
     def __init__(self, data_dir, sequence_file):
         self.data_dir = data_dir
         self.sequence_file = sequence_file
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     data_dir = 'c:/Users/Tomer/Downloads/!htr-selex/test'  # Directory containing RBP files
     sequence_file = os.path.join(data_dir, 'RNAcompete_sequences.txt')  # Path to the RNAcompete sequences file
 
-    dataset = RBPSequenceDataset(data_dir, sequence_file)
+    dataset = RBPTestDataset(data_dir, sequence_file)
     dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
 
     for batch in dataloader:
