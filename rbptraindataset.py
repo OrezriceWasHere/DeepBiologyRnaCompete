@@ -1,9 +1,8 @@
 import os
 from torch.utils.data import Dataset, DataLoader
-import torch
 
 
-class RbpDataset(Dataset):
+class RbpTrainDataset(Dataset):
     def __init__(self, directory):
         self.directory = directory
         self.files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.txt')]
@@ -26,7 +25,7 @@ class RbpDataset(Dataset):
 
 if __name__ == '__main__':
     directory = 'c:/Users/Tomer/Downloads/!htr-selex/'  # Change to your directory containing text files
-    dataset = RbpDataset(directory)
+    dataset = RbpTrainDataset(directory)
     dataloader = DataLoader(dataset, batch_size=64)
 
     for batch in dataloader:
