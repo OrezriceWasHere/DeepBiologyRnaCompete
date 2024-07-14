@@ -3,10 +3,9 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class RbpCompeteSequenceDataset(Dataset):
-    def __init__(self, data_dir, sequence_file):
-        self.data_dir = data_dir
+    def __init__(self, rbp_file, sequence_file):
+        self.rbp_file = rbp_file
         self.sequence_file = sequence_file
-        self.files = [f for f in os.listdir(data_dir) if f.startswith('RBP') and f.endswith('.txt')]
         self.sequences = self._load_sequences(sequence_file)
         self.data = self._load_data()
 
@@ -18,12 +17,9 @@ class RbpCompeteSequenceDataset(Dataset):
         return sequences
 
     def _load_data(self):
-        data = []
-        for file in self.files:
-            for seq in self.sequences:
-                with open(os.path.join(self.data_dir, file), 'r') as f:
-                    for line in f:
-                        data.append((seq, line))
+        with open(self.rbp_file, 'r') as f:
+            rbps = [_ for _ in f]
+            data = list(zip(self.sequences, rbps))
         return data
 
     def __len__(self):
@@ -34,10 +30,10 @@ class RbpCompeteSequenceDataset(Dataset):
         return x, y
 
 if __name__ == '__main__':
-    data_dir = 'c:/Users/Tomer/Downloads/!htr-selex/test'  # Directory containing RBP files
-    sequence_file = os.path.join(data_dir, 'RNAcompete_sequences.txt')  # Path to the RNAcompete sequences file
+    rbp_file = 'c:/Users/Tomer/Downloads/!htr-selex/test/RBP9.txt'  # Directory containing RBP files
+    sequence_file = 'c:/Users/Tomer/Downloads/!htr-selex/test/RNAcompete_sequences.txt'  # Path to the RNAcompete sequences file
 
-    dataset = RbpCompeteSequenceDataset(data_dir, sequence_file)
+    dataset = RbpCompeteSequenceDataset(rbp_file, sequence_file)
     dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
 
     for batch in dataloader:
