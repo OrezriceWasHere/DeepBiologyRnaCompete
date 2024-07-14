@@ -1,33 +1,47 @@
 import argparse
+import torch
+from prediction_model import PredictionModel
+from hyper_parmas import HyperParams
+from clearml_poc import clearml_init
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def main(sequence_file, htr_selex_files, rna_compete_intensities):
-    pass
+    params = HyperParams
+    clearml_init(params)
 
+    max_len = 41
+    input = torch.randint(params.one_hot_size, (params.batch_size, max_len)).to(device)
+    input = torch.nn.functional.one_hot(input).float()
+    input = input.permute(0, 2, 1)
+
+    model = PredictionModel(params).to(device)
+    y = model(input)
+    pass
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("rna_compete_sequences",
-                        type="str",
-                        help="path to RNA compete sequences",
-                        default="./data/RNAcompete_sequences.txt")
 
-    parser.add_argument('htr_selex',
-                        metavar='N',
+    parser.add_argument('rna_compete_sequences',
+                        default="./data/RNAcompete_sequences.txt",
+                        nargs='?',
                         type=str,
-                        nargs='+',
+                        help='sequences file')
+
+    parser.add_argument('htr_selex_files',
                         default=['./data/RBP1_1.txt',
                                  './data/RBP1_2.txt',
                                  './data/RBP1_3.txt',
                                  './data/RBP1_4.txt', ],
-                        help='a list of strings')
+                        nargs='*',
+                        help='htr selex files')
+    default_rna_compete_intensities = './data/RBP1.txt'
 
-    parser.add_argument("-rna",
-                        "--rna_intensities",
-                        action='store_true',
-                        dest='rna_compete_intensities',
-                        default="./data/RBP1.txt",
-                        help='Enabling debugging.')
+    args = parser.parse_args()
 
-    parser.parse_args()
-    main(parser.rna_compete_sequences, parser.htr_selex, parser.rna_compete_intensities)
+    main(args.rna_compete_sequences,
+         args.htr_selex_files,
+         default_rna_compete_intensities
+         )

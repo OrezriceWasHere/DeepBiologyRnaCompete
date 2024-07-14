@@ -6,19 +6,19 @@ ALLOW_CLEARML = True if env.get("ALLOW_CLEARML") == "yes" else False
 RUNNING_REMOTE = True if env.get("RUNNING_REMOTE") == "yes" else False
 
 
-def clearml_init():
+def clearml_init(params=None):
     global execution_task
     if ALLOW_CLEARML:
 
         Task.add_requirements("requirements.txt")
-        execution_task = Task.init(project_name="NER - Hidden layers",
+        execution_task = Task.init(project_name="DeepBiologyRnaCompete",
                                    task_name="hidden layers - match an entity to another sentence to detect same entity",
                                    task_type=Task.TaskTypes.testing,
                                    reuse_last_task_id=False,)
 
-        if execution_task.running_locally() and RUNNING_REMOTE:
-            name = input("enter description for task:\n")
-            execution_task.set_name(name)
+        name = input("enter description for task:\n")
+        execution_task.set_name(name)
+        execution_task.set_parameters(params)
 
         if RUNNING_REMOTE:
             execution_task.execute_remotely(queue_name="gpu", exit_process=True)
