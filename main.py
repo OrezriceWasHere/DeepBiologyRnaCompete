@@ -41,7 +41,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.rna_compete_sequences,
-         args.htr_selex_files,
-         default_rna_compete_intensities
-         )
+    main(args.rna_compete_sequences, args.htr_selex_files, default_rna_compete_intensities)

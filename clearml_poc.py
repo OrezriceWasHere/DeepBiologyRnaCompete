@@ -15,10 +15,12 @@ def clearml_init(params=None):
                                    task_name="hidden layers - match an entity to another sentence to detect same entity",
                                    task_type=Task.TaskTypes.testing,
                                    reuse_last_task_id=False,)
+        if params:
+            execution_task.set_parameters(params)
 
-        name = input("enter description for task:\n")
-        execution_task.set_name(name)
-        execution_task.set_parameters(params)
+        if execution_task.running_locally():
+            name = input("enter description for task:\n")
+            execution_task.set_name(name)
 
         if RUNNING_REMOTE:
             execution_task.execute_remotely(queue_name="gpu", exit_process=True)

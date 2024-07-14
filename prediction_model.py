@@ -12,13 +12,6 @@ class PredictionModel(nn.Module):
 
         self.fc1 = nn.Linear(200, 1)
 
-        # self.model = torch.nn.Sequential(
-        #     self.conv1,
-        #     nn.SELU(),
-        #     self.pool1,
-        #     nn.Linear(20, 1)
-        # )
-
     def forward(self, x):
         x = self.conv1(x)
         x = F.selu(x)
