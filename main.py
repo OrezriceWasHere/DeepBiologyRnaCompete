@@ -7,9 +7,7 @@ from clearml_poc import clearml_init
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main(sequence_file, htr_selex_files, rna_compete_intensities):
-    params = HyperParams
-    clearml_init(params)
+def main(sequence_file, htr_selex_files, rna_compete_intensities, params):
 
     max_len = 41
     input = torch.randint(params.one_hot_size, (params.batch_size, max_len)).to(device)
@@ -41,4 +39,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.rna_compete_sequences, args.htr_selex_files, default_rna_compete_intensities)
+    params = HyperParams
+    clearml_init(params)
+
+    main(args.rna_compete_sequences, args.htr_selex_files, default_rna_compete_intensities, params)
