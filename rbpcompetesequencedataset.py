@@ -1,5 +1,8 @@
+import torch
 import os
 from torch.utils.data import Dataset, DataLoader
+
+import rna_sequence_encoder
 
 
 class RbpCompeteSequenceDataset(Dataset):
@@ -13,12 +16,16 @@ class RbpCompeteSequenceDataset(Dataset):
         sequences = []
         with open(sequence_file, 'r') as f:
             for line in f:
-                sequences.append(line.strip())
+
+                sequences.append(rna_sequence_encoder.encode_rna(line.strip()).float())
+                # sequences.append(torch.Tensor([float(line.strip())]).squeeze(-1))
+
         return sequences
 
     def _load_data(self):
         with open(self.rbp_file, 'r') as f:
-            rbps = [_ for _ in f]
+            # rbps = [rna_sequence_encoder.encode_rna(_).float() for _ in f]
+            rbps = [torch.Tensor([float(_)]).squeeze(-1) for _ in f]
             data = list(zip(self.sequences, rbps))
         return data
 

@@ -10,7 +10,7 @@ class PredictionModel(nn.Module):
         self.conv1 = nn.Conv1d(in_channels=args.one_hot_size, out_channels=10, kernel_size=3, stride=1, padding=1)
         self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2, padding=0)
 
-        self.fc1 = nn.Linear(200, 1)
+        self.fc1 = nn.Linear(200, 4)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -18,5 +18,5 @@ class PredictionModel(nn.Module):
         x = self.pool1(x)
         x = x.view(-1, 200)
         x = self.fc1(x)
-        x = F.sigmoid(x)
+        x = F.softmax(x, dim=1)
         return x

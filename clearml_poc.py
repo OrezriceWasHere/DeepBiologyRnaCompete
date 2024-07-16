@@ -16,7 +16,7 @@ def clearml_init(params=None):
                                    task_type=Task.TaskTypes.testing,
                                    reuse_last_task_id=False,)
         if params:
-            execution_task.set_parameters(params)
+            execution_task.set_parameters_as_dict(dict(params.__dict__))
 
         if execution_task.running_locally():
             name = input("enter description for task:\n")
