@@ -1,4 +1,3 @@
-from clearml import Task
 from os import environ as env
 import numpy as np
 
@@ -10,6 +9,7 @@ def clearml_init(params=None):
     global execution_task
     if ALLOW_CLEARML:
 
+        from clearml import Task
         Task.add_requirements("requirements.txt")
         execution_task = Task.init(project_name="DeepBiologyRnaCompete",
                                    task_name="hidden layers - match an entity to another sentence to detect same entity",
