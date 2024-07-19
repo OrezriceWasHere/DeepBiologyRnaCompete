@@ -1,22 +1,32 @@
 import torch.nn as nn
 import torch.nn.functional as F
-
+import torch
 
 class PredictionModel(nn.Module):
 
     def __init__(self, args):
         super().__init__()
 
-        self.conv1 = nn.Conv1d(in_channels=args.one_hot_size, out_channels=10, kernel_size=3, stride=1, padding=1)
-        self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2, padding=0)
-
-        self.fc1 = nn.Linear(200, 4)
+        self.lstm_cell = nn.LSTMCell(input_size=args.one_hot_size, hidden_size=args.one_hot_size)
+        self.fc1 = nn.Linear(4, 4)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = F.selu(x)
-        x = self.pool1(x)
-        x = x.view(-1, 200)
-        x = self.fc1(x)
-        x = F.softmax(x, dim=1)
-        return x
+        res = torch.zeros(x.size(0), x.size(1), dtype=torch.float)
+        seq_len = x.size(2)
+        for idx in range(x.size(0)):
+            cur_tensor = x[idx, :, :]
+            cur_tensor = cur_tensor.unsqueeze(0)
+            # Initialize the hidden state and cell state
+            h_t = torch.zeros(1, 4, dtype=torch.float).to(cur_tensor.device)
+            c_t = torch.zeros(1, 4, dtype=torch.float).to(cur_tensor.device)
+
+            # Process the input sequence step by step
+            for t in range(seq_len):
+                x_t = cur_tensor[:, :, t]
+                h_t, c_t = self.lstm_cell(x_t, (h_t, c_t))
+
+            # Fully connected layer
+            cur_tensor = self.fc1(h_t)
+            cur_tensor = F.softmax(cur_tensor, dim=1)
+            res[idx] = cur_tensor
+        return res
