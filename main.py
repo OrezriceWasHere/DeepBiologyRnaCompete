@@ -67,7 +67,7 @@ def test(model, test_loader, epoch):
     predictions = []
     intensities = []
 
-    intensity_values = torch.tensor([x for x in range(5)]).to(device)
+    intensity_values = torch.tensor([x for x in range(1, 5)]).to(device)
     for i, (sequences, intensity) in enumerate(test_loader):
         intensities.extend(torch.flatten(intensity).tolist())
         sequences = sequences.to(device)
