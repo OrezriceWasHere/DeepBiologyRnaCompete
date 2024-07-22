@@ -1,4 +1,6 @@
 import argparse
+
+import numpy as np
 import torch
 from tqdm import trange
 import clearml_poc
@@ -22,19 +24,21 @@ def collate_fn(batch):
 
 
 def main(sequence_file, htr_selex_files, rna_compete_intensities, params):
-
+    print("Device:", device)
     model = PredictionModel(params).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
     train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
+    train_loader = torch.utils.data.DataLoader(train_dataset, num_workers=8, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
+    # train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True)
 
     test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file)
-    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=True, num_workers=8)
 
     for epoch in trange(params.epochs):
-        # train(model, optimizer, train_loader, epoch)
+        train(model, optimizer, train_loader, epoch)
         test(model, test_loader, epoch)
+        pass
 
     # max_len = 41
     # input = torch.randint(params.one_hot_size, (params.batch_size, max_len)).to(device)
@@ -47,7 +51,7 @@ def main(sequence_file, htr_selex_files, rna_compete_intensities, params):
 
 
 def train(model, optimizer, train_loader, epoch):
-
+    model.train()
     sum_loss = 0
     for i, (sequences, labels) in enumerate(train_loader):
         sequences, labels = sequences.to(device), labels.to(device)
@@ -63,7 +67,7 @@ def train(model, optimizer, train_loader, epoch):
 
 
 def test(model, test_loader, epoch):
-
+    model.eval()
     predictions = []
     intensities = []
 
@@ -71,10 +75,12 @@ def test(model, test_loader, epoch):
     for i, (sequences, intensity) in enumerate(test_loader):
         intensities.extend(torch.flatten(intensity).tolist())
         sequences = sequences.to(device)
-        intensity_predictions = model(sequences) * intensity_values
-        predictions.extend(intensity_predictions)
+        intensity_predictions = torch.sum(model(sequences) * intensity_values, dim=1)
+        predictions.extend(intensity_predictions.cpu().tolist())
 
-    pearson_correlation = torch.corrcoef(predictions, intensities)[0][1].item()
+    x = np.asarray(predictions).astype(float)
+    y = np.asarray(intensities).astype(float)
+    pearson_correlation = np.corrcoef(x, y=y)[0][1]
     clearml_poc.add_point_to_graph("Pearson Correlation", "test", epoch, pearson_correlation)
 
 

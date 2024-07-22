@@ -1,9 +1,6 @@
 import torch
 import os
 from torch.utils.data import Dataset, DataLoader
-
-import rna_sequence_encoder
-
 import sequence_encoder
 
 
