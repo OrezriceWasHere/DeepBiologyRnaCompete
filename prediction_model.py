@@ -44,5 +44,4 @@ class PredictionModel(nn.Module):
         h, c = self.lstm_cell(x, (h_t, c_t))
         last_hidden = h[:, -1, :]
         res = self.fc1(last_hidden)
-        res = F.softmax(res, dim=-1)
         return res

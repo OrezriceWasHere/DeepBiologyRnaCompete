@@ -18,14 +18,11 @@ def clearml_init(params=None):
         if params:
             execution_task.set_parameters_as_dict(dict(params.__dict__))
 
-        if execution_task.running_locally():
-            # name = input("enter description for task:\n")
-            name = "lstm"
-            execution_task.set_name(name)
-
         if RUNNING_REMOTE:
+            if execution_task.running_locally():
+                name = input("enter description for task:\n")
+                execution_task.set_name(name)
             execution_task.execute_remotely(queue_name="gpu", exit_process=True)
-
 
 def clearml_display_image(image, iteration, series, description):
     if ALLOW_CLEARML:

@@ -26,28 +26,22 @@ def collate_fn(batch):
 def main(sequence_file, htr_selex_files, rna_compete_intensities, params):
     print("Device:", device)
     model = PredictionModel(params).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=params.lr)
 
     train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files)
-    train_loader = torch.utils.data.DataLoader(train_dataset, num_workers=8, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
+    train_loader = torch.utils.data.DataLoader(train_dataset, num_workers=2, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
     # train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True)
-
+    print("done loading train")
     test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file)
-    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=True, num_workers=8)
+    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    print("done loading test")
 
     for epoch in trange(params.epochs):
         train(model, optimizer, train_loader, epoch)
+        print(f"done train epoch {epoch}")
         test(model, test_loader, epoch)
+        print(f"done test epoch {epoch}")
         pass
-
-    # max_len = 41
-    # input = torch.randint(params.one_hot_size, (params.batch_size, max_len)).to(device)
-    # input = torch.nn.functional.one_hot(input).float()
-    # input = input.permute(0, 2, 1)
-    #
-    # model = PredictionModel(params).to(device)
-    # y = model(input)
-    # pass
 
 
 def train(model, optimizer, train_loader, epoch):
@@ -75,7 +69,8 @@ def test(model, test_loader, epoch):
     for i, (sequences, intensity) in enumerate(test_loader):
         intensities.extend(torch.flatten(intensity).tolist())
         sequences = sequences.to(device)
-        intensity_predictions = torch.sum(model(sequences) * intensity_values, dim=1)
+        outputs = torch.softmax(model(sequences), dim=1)
+        intensity_predictions = torch.sum(outputs * intensity_values, dim=1)
         predictions.extend(intensity_predictions.cpu().tolist())
 
     x = np.asarray(predictions).astype(float)
@@ -92,7 +87,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('rna_compete_sequences',
-                        default="./data/RNAcompete_sequences.txt",
+                        default="./data/RNAcompete_sequences_rc.txt",
                         nargs='?',
                         type=str,
                         help='sequences file')

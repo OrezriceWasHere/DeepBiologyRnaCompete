@@ -1,5 +1,4 @@
 import torch
-import os
 from torch.utils.data import Dataset, DataLoader
 import sequence_encoder
 
@@ -15,7 +14,6 @@ class RbpCompeteSequenceDataset(Dataset):
         sequences = []
         with open(sequence_file, 'r') as f:
             for line in f:
-
                 sequences.append(sequence_encoder.encode_rna(line.strip()).float())
                 # sequences.append(torch.Tensor([float(line.strip())]).squeeze(-1))
 
