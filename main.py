@@ -7,9 +7,10 @@ import rbpselexdataset
 from prediction_model import PredictionModel
 from hyper_parmas import HyperParams
 from clearml_poc import clearml_init
+import sequence_generator
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+RBP_DEF_FILE_NAME = './RBP1_1.txt'
 
 def collate_fn(batch):
     data = [item[0] for item in batch]
@@ -23,6 +24,9 @@ def collate_fn(batch):
 
 def main(sequence_file, htr_selex_files, rna_compete_intensities, params):
 
+    if len(htr_selex_files) == 1:
+        sequence_generator.generate_rbp_file(RBP_DEF_FILE_NAME)
+        htr_selex_files.append(RBP_DEF_FILE_NAME)
     model = PredictionModel(params).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
