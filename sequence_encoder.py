@@ -10,7 +10,6 @@ def encode(sequence: str, mapping: dict) -> torch.Tensor:
 
     padded_seq = sequence.ljust(max_len, "X")
     digits = torch.Tensor([mapping[x] for x in padded_seq if x not in ignore])
-
     one_hot = torch.nn.functional.one_hot(digits.to(torch.int64), num_classes=len(mapping))
 
     return one_hot.t()
