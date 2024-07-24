@@ -12,6 +12,7 @@ import sequence_generator
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 RBP_DEF_FILE_NAME = './RBP1_1.txt'
 
+
 def collate_fn(batch):
     data = [item[0] for item in batch]
     target = [item[1] for item in batch]
