@@ -4,12 +4,17 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 import sequence_encoder
-
+import sequence_generator
+RBP_DEF_FILE_NAME = './RBP1_1.txt'
 
 class RbpSelexDataset(Dataset):
     def __init__(self, rbps_files):
         self.rbps_files = rbps_files
         self.data = []
+
+        if len(rbps_files) == 1:
+            sequence_generator.generate_rbp_file(RBP_DEF_FILE_NAME)
+            rbps_files.append(RBP_DEF_FILE_NAME)
 
         for file in self.rbps_files:
             with open(file, 'r') as f:

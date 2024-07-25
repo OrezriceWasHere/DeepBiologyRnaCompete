@@ -10,7 +10,7 @@ from clearml_poc import clearml_init
 import sequence_generator
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-RBP_DEF_FILE_NAME = './RBP1_1.txt'
+
 
 
 def collate_fn(batch):
@@ -25,9 +25,6 @@ def collate_fn(batch):
 
 def main(sequence_file, htr_selex_files, rna_compete_intensities, params):
 
-    if len(htr_selex_files) == 1:
-        sequence_generator.generate_rbp_file(RBP_DEF_FILE_NAME)
-        htr_selex_files.append(RBP_DEF_FILE_NAME)
     model = PredictionModel(params).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
@@ -38,17 +35,8 @@ def main(sequence_file, htr_selex_files, rna_compete_intensities, params):
     test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=True)
 
     for epoch in trange(params.epochs):
-        # train(model, optimizer, train_loader, epoch)
+        train(model, optimizer, train_loader, epoch)
         test(model, test_loader, epoch)
-
-    # max_len = 41
-    # input = torch.randint(params.one_hot_size, (params.batch_size, max_len)).to(device)
-    # input = torch.nn.functional.one_hot(input).float()
-    # input = input.permute(0, 2, 1)
-    #
-    # model = PredictionModel(params).to(device)
-    # y = model(input)
-    # pass
 
 
 def train(model, optimizer, train_loader, epoch):
