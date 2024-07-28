@@ -5,22 +5,24 @@ ALLOW_CLEARML = True if env.get("ALLOW_CLEARML") == "yes" else False
 RUNNING_REMOTE = True if env.get("RUNNING_REMOTE") == "yes" else False
 
 
-def clearml_init(params=None):
+def clearml_init(args=None, params=None):
     global execution_task
     if ALLOW_CLEARML:
 
         from clearml import Task
         Task.add_requirements("requirements.txt")
         execution_task = Task.init(project_name="DeepBiologyRnaCompete",
+
                                    task_name="hidden layers - match an entity to another sentence to detect same entity",
                                    task_type=Task.TaskTypes.testing,
-                                   reuse_last_task_id=False,)
-        if params:
-            execution_task.set_parameters_as_dict(dict(params.__dict__))
+                                   )
 
         if execution_task.running_locally():
             name = input("enter description for task:\n")
             execution_task.set_name(name)
+            if params:
+                all_params = dict(dict(params.__dict__) if params else {}) | vars(args or {})
+                execution_task.set_parameters_as_dict(all_params)
 
         if RUNNING_REMOTE:
             execution_task.execute_remotely(queue_name="gpu", exit_process=True)
@@ -62,3 +64,9 @@ def add_confusion_matrix(matrix, title, series, iteration):
 def add_text(text):
     if ALLOW_CLEARML:
         execution_task.get_logger().report_text(text)
+
+
+def get_param(param_name, section='General'):
+    if ALLOW_CLEARML:
+        return execution_task.get_parameter(f'{section}/{param_name}')
+    return None
