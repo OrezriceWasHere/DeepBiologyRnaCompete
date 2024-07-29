@@ -21,16 +21,17 @@ class RbpSelexDataset(Dataset):
                 for line in f:
                     sequence, _ = line.strip().split(',')
                     label = int(file[:-4].split('_')[1])  # Extract the label
-                    encoded_sequence = sequence_encoder.encode_dna(sequence).float()
+                    encoded_sequence, sequence_length = sequence_encoder.encode_dna(sequence)
+                    encoded_sequence = encoded_sequence.float()
                     tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1  # Subtract 1 to make the labels 0-based
-                    self.data.append((encoded_sequence, tensor_label))
+                    self.data.append((encoded_sequence, sequence_length, tensor_label))
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        x, y = self.data[idx]
-        return x, y
+        x, length, y = self.data[idx]
+        return x, length, y
 
 
 if __name__ == '__main__':

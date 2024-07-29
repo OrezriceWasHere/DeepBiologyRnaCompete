@@ -7,32 +7,33 @@ class RbpCompeteSequenceDataset(Dataset):
     def __init__(self, rbp_file, sequence_file):
         self.rbp_file = rbp_file
         self.sequence_file = sequence_file
-        self.sequences = self._load_sequences(sequence_file)
+        self.sequences, self.sequences_length = self._load_sequences(sequence_file)
         self.data = self._load_data()
 
     def _load_sequences(self, sequence_file):
         sequences = []
+        sequences_length = []
         with open(sequence_file, 'r') as f:
             for line in f:
+                encoded_sequence, sequence_length = sequence_encoder.encode_rna(line.strip())
+                sequences.append(encoded_sequence.float())
+                sequences_length.append(sequence_length)
 
-                sequences.append(sequence_encoder.encode_rna(line.strip()).float())
-                # sequences.append(torch.Tensor([float(line.strip())]).squeeze(-1))
-
-        return sequences
+        return sequences, sequences_length
 
     def _load_data(self):
         with open(self.rbp_file, 'r') as f:
             # rbps = [rna_sequence_encoder.encode_rna(_).float() for _ in f]
             rbps = [torch.Tensor([float(_)]).squeeze(-1) for _ in f]
-            data = list(zip(self.sequences, rbps))
+            data = list(zip(self.sequences, self.sequences_length, rbps))
         return data
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        x, y = self.data[idx]
-        return x, y
+        x, size, y = self.data[idx]
+        return x, size, y
 
 if __name__ == '__main__':
     rbp_file = 'c:/Users/Tomer/Downloads/!htr-selex/test/RBP9.txt'  # Directory containing RBP files

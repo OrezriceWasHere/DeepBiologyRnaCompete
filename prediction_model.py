@@ -17,13 +17,14 @@ class PredictionModel(nn.Module):
         self.fc1 = nn.Linear(args.lstm_hidden_size, args.prediction_classes)
         self.args: HyperParams = args
 
-    def forward(self, x):
+    def forward(self, x, x_size=None):
         x_batch_size = x.shape[0]
         hidden_cells_size = (self.args.lstm_layers, x_batch_size, self.args.lstm_hidden_size)
         h_t = torch.zeros(hidden_cells_size, dtype=torch.float).to(x.device)
         c_t = torch.zeros(hidden_cells_size, dtype=torch.float).to(x.device)
         h, c = self.lstm_cell(x, (h_t, c_t))
-        last_hidden = h[:, -1, :]
+        last_indices = (x_size - 1).unsqueeze(2).expand(x_batch_size, 1, self.args.lstm_hidden_size)
+        last_hidden = h.gather(1, last_indices).squeeze(1)
         res = self.fc1(last_hidden)
         return res
 
