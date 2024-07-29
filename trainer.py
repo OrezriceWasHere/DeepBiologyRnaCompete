@@ -8,11 +8,11 @@ import torch.nn.functional as F
 def train(model: PredictionModel, optimizer, train_loader, device, epoch, params):
     model.train()
     sum_loss = 0
-    for i, (sequences, labels) in enumerate(train_loader):
-        sequences, labels = sequences.to(device), labels.to(device)
+    for i, (sequences, lengths, labels) in enumerate(train_loader):
+        sequences, lengths, labels = sequences.to(device), lengths.to(device), labels.to(device)
 
         optimizer.zero_grad()
-        outputs = model(sequences)
+        outputs = model(sequences, lengths)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -27,10 +27,10 @@ def test(model: PredictionModel, test_loader, device, epoch, params):
     intensities = []
 
     intensity_values = torch.tensor([x for x in range(1, 5)]).to(device)
-    for i, (sequences, intensity) in enumerate(test_loader):
+    for i, (sequences, lengths, intensity) in enumerate(test_loader):
         intensities.extend(torch.flatten(intensity).tolist())
-        sequences = sequences.to(device)
-        outputs = F.softmax(model(sequences), dim=-1)
+        sequences, lengths = sequences.to(device), lengths.to(device)
+        outputs = F.softmax(model(sequences, lengths), dim=-1)
         intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
         predictions.extend(intensity_predictions)
 

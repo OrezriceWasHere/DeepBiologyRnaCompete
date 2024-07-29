@@ -23,6 +23,7 @@ class PredictionModel(nn.Module):
         h_t = torch.zeros(hidden_cells_size, dtype=torch.float).to(x.device)
         c_t = torch.zeros(hidden_cells_size, dtype=torch.float).to(x.device)
         h, c = self.lstm_cell(x, (h_t, c_t))
-        last_hidden = h[:, -1, :]
+        last_indices = (x_size - 1).unsqueeze(2).expand(x_batch_size, 1, self.args.lstm_hidden_size)
+        last_hidden = h.gather(1, last_indices).squeeze(1)
         res = self.fc1(last_hidden)
         return res
