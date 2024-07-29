@@ -26,3 +26,10 @@ class PredictionModel(nn.Module):
         last_hidden = h[:, -1, :]
         res = self.fc1(last_hidden)
         return res
+
+    def sum_weights(self):
+        l2_reg = torch.tensor(0.).cpu()
+        for param in self.parameters():
+            l2_reg += torch.norm(param, p=2).cpu()
+
+        return l2_reg

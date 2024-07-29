@@ -13,7 +13,9 @@ def train(model: PredictionModel, optimizer, train_loader, device, epoch, params
 
         optimizer.zero_grad()
         outputs = model(sequences)
-        loss = torch.nn.functional.cross_entropy(outputs, labels)
+        ce_loss = F.cross_entropy(outputs, labels)
+        model_weights_loss = (params.sum_weights_lambda * model.sum_weights()).to(ce_loss.device)
+        loss = ce_loss + model_weights_loss
         loss.backward()
         optimizer.step()
         sum_loss += loss.item()
