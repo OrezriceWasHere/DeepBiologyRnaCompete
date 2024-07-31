@@ -8,9 +8,12 @@ import sequence_generator
 RBP_DEF_FILE_NAME = './RBP1_1.txt'
 
 class RbpSelexDataset(Dataset):
-    def __init__(self, rbps_files):
+    def __init__(self, rbps_files, embedding_size, padded_sequence_max_legnth):
         self.rbps_files = rbps_files
         self.data = []
+        self.possible_encodings = sequence_encoder.all_possible_encodings(embedding_size, ['A', 'C', 'G', 'T'])
+        self.k = embedding_size
+        self.padded_sequence_max_legnth = padded_sequence_max_legnth
 
         if len(rbps_files) == 1:
             sequence_generator.generate_rbp_file(RBP_DEF_FILE_NAME)
@@ -20,9 +23,14 @@ class RbpSelexDataset(Dataset):
             with open(file, 'r') as f:
                 for line in f:
                     sequence, _ = line.strip().split(',')
-                    label = int(file[:-4].split('_')[1])  # Extract the label
-                    encoded_sequence, sequence_length = sequence_encoder.encode_dna(sequence)
-                    encoded_sequence = encoded_sequence.float()
+                    label = int(file[:-4].split('_')[1])
+                    encoded_sequence, sequence_length = sequence_encoder.encode_embedding(sequence,
+                                                                                          self.possible_encodings,
+                                                                                          self.k,
+                                                                                          self.padded_sequence_max_legnth)
+                    # Extract the label
+                    # encoded_sequence, sequence_length = sequence_encoder.encode_dna(sequence)
+                    # encoded_sequence = encoded_sequence.long()
                     tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1  # Subtract 1 to make the labels 0-based
                     self.data.append((encoded_sequence, sequence_length, tensor_label))
 

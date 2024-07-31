@@ -4,9 +4,12 @@ import sequence_encoder
 
 
 class RbpCompeteSequenceDataset(Dataset):
-    def __init__(self, rbp_file, sequence_file):
+    def __init__(self, rbp_file, sequence_file, k, padded_sequence_max_legnth):
         self.rbp_file = rbp_file
         self.sequence_file = sequence_file
+        self.possible_encodings = sequence_encoder.all_possible_encodings(k, ['A', 'C', 'G', 'T'])
+        self.padded_sequence_max_legnth = padded_sequence_max_legnth
+        self.k = k
         self.sequences, self.sequences_length = self._load_sequences(sequence_file)
         self.data = self._load_data()
 
@@ -15,8 +18,10 @@ class RbpCompeteSequenceDataset(Dataset):
         sequences_length = []
         with open(sequence_file, 'r') as f:
             for line in f:
-                encoded_sequence, sequence_length = sequence_encoder.encode_rna(line.strip())
-                sequences.append(encoded_sequence.float())
+                encoded_sequence, sequence_length = sequence_encoder.encode_embedding(line.strip(), self.possible_encodings, self.k, self.padded_sequence_max_legnth)
+                # sequences.append(encoded_sequence.float())
+                sequences.append(encoded_sequence)
+
                 sequences_length.append(sequence_length)
 
         return sequences, sequences_length
