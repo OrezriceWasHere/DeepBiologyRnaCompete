@@ -1,0 +1,59 @@
+[
+  {
+    "train": [
+      "RBP1_1.txt",
+      "RBP1_2.txt",
+      "RBP1_3.txt",
+      "RBP1_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP1.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP2_1.txt",
+      "RBP2_2.txt",
+      "RBP2_3.txt",
+      "RBP2_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP2.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP3_1.txt",
+      "RBP3_2.txt",
+      "RBP3_3.txt",
+      "RBP3_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP3.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP4_1.txt",
+      "RBP4_2.txt",
+      "RBP4_3.txt",
+      "RBP4_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP4.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP5_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP1.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  }
+]

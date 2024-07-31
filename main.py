@@ -1,4 +1,6 @@
 import argparse
+import json
+
 import torch
 from tqdm import trange
 import optuna
@@ -11,17 +13,24 @@ from hyper_parmas import HyperParams
 from clearml_poc import clearml_init
 import trainer
 from sequence_encoder import stack_batch as collate_fn
+from torch.utils.data import DataLoader
 
 
 def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params, device):
     print(f"action is :{action}")
+
+    if action == 'several_datasets':
+        datasets = json.load(open("dataset_mapping.json"))
+        several_datasets(datasets, params)
+
     k = params.embedding_char_length
     padded_sequence_max_legnth = params.padding_max_size
     train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files, k, padded_sequence_max_legnth)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True,
                                                collate_fn=collate_fn)
 
-    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file, k, padded_sequence_max_legnth)
+    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file, k,
+                                                                       padded_sequence_max_legnth)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
 
     if action == 'hyperparam_exploration':
@@ -29,6 +38,40 @@ def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params
 
     elif action == 'default_training':
         default_training(train_loader, test_loader, params)
+
+def dataset_index_to_train_loader(datasets, dataset_index, params: HyperParams):
+    dataset_files = datasets[dataset_index]["train"]
+    htr_selex_files = [f'./data/{file}' for file in dataset_files]
+    k = params.embedding_char_length
+    padded_sequence_max_length = params.padding_max_size
+    train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files, k, padded_sequence_max_length)
+    train_loader = torch.utils.data.DataLoader(train_dataset,
+                                               batch_size=params.batch_size,
+                                               shuffle=True,
+                                               collate_fn=collate_fn)
+
+    return train_loader
+
+
+def dataset_index_to_test_loader(datasets, dataset_index, params: HyperParams):
+    test_sequences = datasets[dataset_index]["test"]["sequences"]
+    test_intensities = datasets[dataset_index]["test"]["intensities"]
+    k = params.embedding_char_length
+    padded_sequence_max_length = params.padding_max_size
+
+    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(test_intensities, test_sequences, k,
+                                                                       padded_sequence_max_length)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
+
+    return test_loader
+
+
+def several_datasets(datasets, params: HyperParams):
+    training_datasets = [0, 1, 2, 3]
+    testing_datasets = [4]
+    train_loaders = [dataset_index_to_train_loader(datasets, dataset_index, params) for dataset_index in training_datasets]
+    test_loaders = [dataset_index_to_test_loader(datasets, dataset_index, params) for dataset_index in testing_datasets]
+    default_training(train_loaders, test_loaders, params)
 
 
 def hyper_parameter_exploration(train_loader, test_loader):
@@ -51,17 +94,33 @@ def hyper_parameter_exploration(train_loader, test_loader):
         print("    {}: {}".format(key, value))
 
 
-def default_training(train_loader, test_loader, params, model=None, optimizer=None):
+def default_training(train_loader: DataLoader | list[DataLoader], test_loader: DataLoader | list[DataLoader],
+                     params, model=None, optimizer=None):
     if not model:
         model = PredictionModel(params).to(device)
 
     if not optimizer:
         optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
+    if isinstance(train_loader, DataLoader):
+        train_loader = [train_loader]
+
+    if isinstance(test_loader, DataLoader):
+        test_loader = [test_loader]
+
     pearson_correlation = 0
+
     for epoch in trange(params.epochs):
-        trainer.train(model, optimizer, train_loader, device, epoch, params)
-        pearson_correlation = trainer.test(model, test_loader, device, epoch, params)
+
+        for loader in train_loader:
+            trainer.train(model, optimizer, loader, device, epoch, params)
+
+        pearson_correlations = []
+        for loader in test_loader:
+            pearson_correlation = trainer.test(model, loader, device, epoch, params)
+            pearson_correlations.append(pearson_correlation)
+
+        pearson_correlation = sum(pearson_correlations) / len(pearson_correlations)
 
     return pearson_correlation
 
@@ -69,7 +128,9 @@ def default_training(train_loader, test_loader, params, model=None, optimizer=No
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action',
-                        choices=['hyperparam_exploration', 'default_training'],
+                        choices=['hyperparam_exploration',
+                                 'default_training',
+                                 'several_datasets'],
                         nargs='?',
                         default='default_training',
                         help='action')

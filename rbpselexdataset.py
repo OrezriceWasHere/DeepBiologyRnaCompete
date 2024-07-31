@@ -5,7 +5,9 @@ from torch.utils.data import Dataset, DataLoader
 
 import sequence_encoder
 import sequence_generator
+
 RBP_DEF_FILE_NAME = './RBP1_1.txt'
+
 
 class RbpSelexDataset(Dataset):
     def __init__(self, rbps_files, embedding_size, padded_sequence_max_legnth):
