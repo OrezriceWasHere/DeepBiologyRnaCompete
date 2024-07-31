@@ -1,7 +1,7 @@
 import random
 
 
-def generate_random_sequence(length=39):
+def generate_random_sequence(length=41):
     """Generate a random sequence of 'A', 'C', 'T', 'G' of given length."""
     return ''.join(random.choice('ACTG') for _ in range(length))
 

@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import sequence_encoder
 import sequence_generator
 
-RBP_DEF_FILE_NAME = './RBP1_1.txt'
+RBP_DEF_FILE_NAME = './RBP_EXTRA.txt'
 
 
 class RbpSelexDataset(Dataset):

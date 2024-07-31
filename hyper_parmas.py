@@ -8,7 +8,7 @@ class HyperParams:
     lstm_hidden_size: int = 200
     prediction_classes: int = 4
     embedding_char_length: int = 5
-    embedding_dict_size: int = 200
+    embedding_dict_size: int = 1100
     padding_max_size: int = 20
     is_bidirectional: bool = False
 

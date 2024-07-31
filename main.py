@@ -20,7 +20,7 @@ def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params
     print(f"action is :{action}")
 
     if action == 'several_datasets':
-        datasets = json.load(open("dataset_mapping.json"))
+        datasets = json.load(open("data/dataset_mapping.json"))
         several_datasets(datasets, params)
 
     k = params.embedding_char_length
@@ -39,6 +39,7 @@ def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params
     elif action == 'default_training':
         default_training(train_loader, test_loader, params)
 
+
 def dataset_index_to_train_loader(datasets, dataset_index, params: HyperParams):
     dataset_files = datasets[dataset_index]["train"]
     htr_selex_files = [f'./data/{file}' for file in dataset_files]
@@ -54,12 +55,12 @@ def dataset_index_to_train_loader(datasets, dataset_index, params: HyperParams):
 
 
 def dataset_index_to_test_loader(datasets, dataset_index, params: HyperParams):
-    test_sequences = datasets[dataset_index]["test"]["sequences"]
-    test_intensities = datasets[dataset_index]["test"]["intensities"]
+    test_sequences = "./data/" + datasets[dataset_index]["test"]["sequences"]
+    test_intensities = "./data/" + datasets[dataset_index]["test"]["intensities"]
     k = params.embedding_char_length
     padded_sequence_max_length = params.padding_max_size
 
-    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(test_intensities, test_sequences, k,
+    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(test_sequences, test_intensities, k,
                                                                        padded_sequence_max_length)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
 
@@ -67,9 +68,10 @@ def dataset_index_to_test_loader(datasets, dataset_index, params: HyperParams):
 
 
 def several_datasets(datasets, params: HyperParams):
-    training_datasets = [0, 1, 2, 3]
-    testing_datasets = [4]
-    train_loaders = [dataset_index_to_train_loader(datasets, dataset_index, params) for dataset_index in training_datasets]
+    training_datasets = [4, 3, 2, 1]
+    testing_datasets = [0]
+    train_loaders = [dataset_index_to_train_loader(datasets, dataset_index, params) for dataset_index in
+                     training_datasets]
     test_loaders = [dataset_index_to_test_loader(datasets, dataset_index, params) for dataset_index in testing_datasets]
     default_training(train_loaders, test_loaders, params)
 
@@ -139,6 +141,10 @@ if __name__ == "__main__":
                         nargs='?',
                         type=str,
                         help='sequences file')
+    parser.add_argument('rna_intensities',
+                        default='./data/RBP1.txt',
+                        nargs='?',
+                        help='rna compete intensities')
     parser.add_argument('htr_selex_files',
                         default=['./data/RBP1_1.txt',
                                  './data/RBP1_2.txt',
@@ -146,7 +152,6 @@ if __name__ == "__main__":
                                  './data/RBP1_4.txt', ],
                         nargs='*',
                         help='htr selex files')
-    default_rna_compete_intensities = './data/RBP1.txt'
     args = parser.parse_args()
     params = HyperParams
     clearml_init(args, params)
@@ -155,4 +160,4 @@ if __name__ == "__main__":
     print(f"device: {device}")
     action = clearml_poc.get_param("action") or args.action
 
-    init(args.rna_compete_sequences, args.htr_selex_files, default_rna_compete_intensities, action, params, device)
+    init(args.rna_compete_sequences, args.htr_selex_files, args.rna_intensities, action, params, device)

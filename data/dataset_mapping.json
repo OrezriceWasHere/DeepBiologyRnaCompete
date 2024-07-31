@@ -52,7 +52,7 @@
       "RBP5_4.txt"
     ],
     "test": {
-      "sequences": "RBP1.txt",
+      "sequences": "RBP5.txt",
       "intensities": "RNAcompete_sequences_rc.txt"
     }
   }
