@@ -15,11 +15,13 @@ from sequence_encoder import stack_batch as collate_fn
 
 def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params, device):
     print(f"action is :{action}")
-    train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files)
+    k = params.embedding_char_length
+    padded_sequence_max_legnth = params.padding_max_size
+    train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files, k, padded_sequence_max_legnth)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True,
                                                collate_fn=collate_fn)
 
-    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file)
+    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file, k, padded_sequence_max_legnth)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
 
     if action == 'hyperparam_exploration':
@@ -38,14 +40,6 @@ def hyper_parameter_exploration(train_loader, test_loader):
     print("starting optuna")
     study = optuna.create_study(direction="maximize")
     study.optimize(optuna_single_trial, n_trials=30)
-
-    pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
-    complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
-
-    print("Study statistics: ")
-    print("  Number of finished trials: ", len(study.trials))
-    print("  Number of pruned trials: ", len(pruned_trials))
-    print("  Number of complete trials: ", len(complete_trials))
 
     print("Best trial:")
     trial = study.best_trial
