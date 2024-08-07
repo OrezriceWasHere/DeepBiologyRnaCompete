@@ -3,12 +3,12 @@ class HyperParams:
     one_hot_size: int = 6
     embedding_vector_size: int = 6
     batch_size: int = 2048
-    epochs: int = 60
+    epochs: int = 150
     lstm_layers: int = 2
     lstm_hidden_size: int = 200
     prediction_classes: int = 4
-    embedding_char_length: int = 5
-    embedding_dict_size: int = 1100
+    embedding_char_length: int = 3
+    embedding_dict_size: int = 200
     padding_max_size: int = 20
     is_bidirectional: bool = False
 

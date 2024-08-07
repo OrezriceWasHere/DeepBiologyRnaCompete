@@ -13,7 +13,7 @@ from hyper_parmas import HyperParams
 from clearml_poc import clearml_init
 import trainer
 from sequence_encoder import stack_batch as collate_fn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset, TensorDataset
 
 
 def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params, device):
@@ -22,6 +22,7 @@ def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params
     if action == 'several_datasets':
         datasets = json.load(open("data/dataset_mapping.json"))
         several_datasets(datasets, params)
+        return
 
     k = params.embedding_char_length
     padded_sequence_max_legnth = params.padding_max_size
@@ -40,21 +41,17 @@ def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params
         default_training(train_loader, test_loader, params)
 
 
-def dataset_index_to_train_loader(datasets, dataset_index, params: HyperParams):
+def dataset_index_to_trainset(datasets, dataset_index, params: HyperParams):
     dataset_files = datasets[dataset_index]["train"]
     htr_selex_files = [f'./data/{file}' for file in dataset_files]
     k = params.embedding_char_length
     padded_sequence_max_length = params.padding_max_size
     train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files, k, padded_sequence_max_length)
-    train_loader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size=params.batch_size,
-                                               shuffle=True,
-                                               collate_fn=collate_fn)
 
-    return train_loader
+    return train_dataset
 
 
-def dataset_index_to_test_loader(datasets, dataset_index, params: HyperParams):
+def dataset_index_to_testset(datasets, dataset_index, params: HyperParams):
     test_sequences = "./data/" + datasets[dataset_index]["test"]["sequences"]
     test_intensities = "./data/" + datasets[dataset_index]["test"]["intensities"]
     k = params.embedding_char_length
@@ -62,18 +59,28 @@ def dataset_index_to_test_loader(datasets, dataset_index, params: HyperParams):
 
     test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(test_sequences, test_intensities, k,
                                                                        padded_sequence_max_length)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
-
-    return test_loader
+    return test_dataset
 
 
-def several_datasets(datasets, params: HyperParams):
-    training_datasets = [4, 3, 2, 1]
-    testing_datasets = [0]
-    train_loaders = [dataset_index_to_train_loader(datasets, dataset_index, params) for dataset_index in
-                     training_datasets]
-    test_loaders = [dataset_index_to_test_loader(datasets, dataset_index, params) for dataset_index in testing_datasets]
-    default_training(train_loaders, test_loaders, params)
+def several_datasets(datasets_mapping, params: HyperParams):
+    training_datasets = [4]
+    testing_datasets = [4]
+    train_datasets = [dataset_index_to_trainset(datasets_mapping, dataset_index, params) for dataset_index in
+                      training_datasets]
+    test_datasets = [dataset_index_to_testset(datasets_mapping, dataset_index, params) for dataset_index in
+                     testing_datasets]
+
+    concat_train_dataset = ConcatDataset(train_datasets)
+    concat_test_datasets = ConcatDataset(test_datasets)
+
+    train_loader = DataLoader(concat_train_dataset,
+                              batch_size=params.batch_size,
+                              shuffle=True,
+                              collate_fn=collate_fn)
+
+    test_loader = DataLoader(concat_test_datasets, batch_size=params.batch_size, shuffle=True)
+
+    default_training(train_loader, test_loader, params)
 
 
 def hyper_parameter_exploration(train_loader, test_loader):
@@ -104,25 +111,11 @@ def default_training(train_loader: DataLoader | list[DataLoader], test_loader: D
     if not optimizer:
         optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
-    if isinstance(train_loader, DataLoader):
-        train_loader = [train_loader]
-
-    if isinstance(test_loader, DataLoader):
-        test_loader = [test_loader]
-
     pearson_correlation = 0
 
     for epoch in trange(params.epochs):
-
-        for loader in train_loader:
-            trainer.train(model, optimizer, loader, device, epoch, params)
-
-        pearson_correlations = []
-        for loader in test_loader:
-            pearson_correlation = trainer.test(model, loader, device, epoch, params)
-            pearson_correlations.append(pearson_correlation)
-
-        pearson_correlation = sum(pearson_correlations) / len(pearson_correlations)
+        trainer.train(model, optimizer, train_loader, device, epoch, params)
+        pearson_correlation = trainer.test(model, test_loader, device, epoch, params)
 
     return pearson_correlation
 

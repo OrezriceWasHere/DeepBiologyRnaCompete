@@ -60,4 +60,6 @@ def stack_batch(batch):
     length = torch.stack(length, dim=0)
     target = torch.stack(target, dim=0)
 
-    return data, length, target
+    pair = (data, length, target)
+
+    return pair

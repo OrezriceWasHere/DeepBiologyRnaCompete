@@ -2,18 +2,38 @@ import torch
 import numpy as np
 import clearml_poc
 from prediction_model import PredictionModel
-import torch.nn.functional as F
+from torch.utils.data import DataLoader
+from collections import Counter
+from torch.utils.data.dataset import ConcatDataset
+
+
+def get_class_inverse_weights(train_loader: DataLoader):
+    if isinstance(train_loader.dataset, ConcatDataset):
+        datasets = train_loader.dataset.datasets
+    else:
+        datasets = [train_loader.dataset]
+
+    counter = Counter()
+    for dataset in datasets:
+        counter = counter + Counter([item[2].item() for item in dataset.data])
+
+    total = sum(counter.values())
+    inverse = [total / (counter[key] * len(counter)) for key in counter.keys()]
+    return torch.tensor(inverse, dtype=torch.float32)
 
 
 def train(model: PredictionModel, optimizer, train_loader, device, epoch, params):
     model.train()
     sum_loss = 0
-    for i, (sequences, lengths, labels) in enumerate(train_loader):
+    balance = get_class_inverse_weights(train_loader).to(device)
+    criterion = torch.nn.CrossEntropyLoss()
+    # criterion = torch.nn.CrossEntropyLoss(weight=balance)
+    for sequences, lengths, labels in train_loader:
         sequences, lengths, labels = sequences.to(device), lengths.to(device), labels.to(device)
 
         optimizer.zero_grad()
         outputs = model(sequences, lengths)
-        loss = torch.nn.functional.cross_entropy(outputs, labels)
+        loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
         sum_loss += loss.item()
@@ -27,11 +47,12 @@ def test(model: PredictionModel, test_loader, device, epoch, params):
     intensities = []
 
     intensity_values = torch.tensor([x for x in range(1, 5)]).to(device)
-    for i, (sequences, lengths, intensity) in enumerate(test_loader):
+    for sequences, lengths, intensity in test_loader:
         intensities.extend(torch.flatten(intensity).tolist())
         sequences, lengths = sequences.to(device), lengths.to(device)
-        outputs = F.softmax(model(sequences, lengths), dim=-1)
-        intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
+        intensity_predictions = torch.argmax(model(sequences, lengths), dim=-1).cpu().tolist()
+        # outputs = F.softmax(model(sequences, lengths), dim=-1)
+        # intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
         predictions.extend(intensity_predictions)
 
     x = np.asarray(intensities)
