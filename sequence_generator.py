@@ -8,15 +8,16 @@ def generate_random_sequence(length=41):
 
 def generate_rbp_list(num_lines=294190) -> list[str]:
     """Generate a text file with the specified number of lines."""
-    rbps = []
+    # rbps = []
     # with open(filename, 'w') as f:
     for _ in range(num_lines):
         random_sequence = generate_random_sequence()
-        rbps.append(random_sequence)
+        yield random_sequence
+        # rbps.append(random_sequence)
             # line = f"{random_sequence},1\n"
             # f.write(line)
 
-    return rbps
+    # return rbps
 
 
 if __name__ == '__main__':

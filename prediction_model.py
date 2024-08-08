@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-
+from torch.nn import functional as F
 from hyper_parmas import HyperParams
 
 
@@ -14,7 +14,15 @@ class PredictionModel(nn.Module):
                                  num_layers=args.lstm_layers,
                                  bidirectional=args.is_bidirectional,
                                  batch_first=True)
-        self.fc1 = nn.Linear(args.lstm_hidden_size, args.prediction_classes)
+        self.post_lstm_net = nn.Sequential(
+            nn.SiLU(),
+            nn.Linear(args.lstm_hidden_size, 3*args.lstm_hidden_size),
+            nn.SiLU(),
+            nn.Linear(3*args.lstm_hidden_size, args.lstm_hidden_size),
+            nn.SiLU(),
+            nn.Linear(args.lstm_hidden_size, args.prediction_classes),
+        )
+        # self.fc1 = nn.Linear(args.lstm_hidden_size, args.prediction_classes)
         self.args: HyperParams = args
 
     def forward(self, x, x_size=None):
@@ -26,5 +34,4 @@ class PredictionModel(nn.Module):
         h, c = self.lstm_cell(embedded_x, (h_t, c_t))
         last_indices = (x_size - 1).unsqueeze(2).expand(x_batch_size, 1, self.args.lstm_hidden_size)
         last_hidden = h.gather(1, last_indices).squeeze(1)
-        res = self.fc1(last_hidden)
-        return res
+        return self.post_lstm_net(last_hidden)

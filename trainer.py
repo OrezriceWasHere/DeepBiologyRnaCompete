@@ -5,7 +5,7 @@ from prediction_model import PredictionModel
 from torch.utils.data import DataLoader
 from collections import Counter
 from torch.utils.data.dataset import ConcatDataset
-
+import torch.nn.functional as F
 
 def get_class_inverse_weights(train_loader: DataLoader):
     if isinstance(train_loader.dataset, ConcatDataset):
@@ -50,9 +50,9 @@ def test(model: PredictionModel, test_loader, device, epoch, params):
     for sequences, lengths, intensity in test_loader:
         intensities.extend(torch.flatten(intensity).tolist())
         sequences, lengths = sequences.to(device), lengths.to(device)
-        intensity_predictions = torch.argmax(model(sequences, lengths), dim=-1).cpu().tolist()
-        # outputs = F.softmax(model(sequences, lengths), dim=-1)
-        # intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
+        # intensity_predictions = torch.argmax(model(sequences, lengths), dim=-1).cpu().tolist()
+        outputs = F.softmax(model(sequences, lengths), dim=-1)
+        intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
         predictions.extend(intensity_predictions)
 
     x = np.asarray(intensities)

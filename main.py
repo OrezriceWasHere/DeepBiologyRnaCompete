@@ -1,6 +1,5 @@
 import argparse
 import json
-
 import torch
 from tqdm import trange
 import optuna
@@ -63,8 +62,10 @@ def dataset_index_to_testset(datasets, dataset_index, params: HyperParams):
 
 
 def several_datasets(datasets_mapping, params: HyperParams):
-    training_datasets = [4]
+    training_datasets = [0, 1, 2, 3]
     testing_datasets = [4]
+    print("training datasets " + str(training_datasets))
+    print("testing datasets " + str(testing_datasets))
     train_datasets = [dataset_index_to_trainset(datasets_mapping, dataset_index, params) for dataset_index in
                       training_datasets]
     test_datasets = [dataset_index_to_testset(datasets_mapping, dataset_index, params) for dataset_index in
@@ -80,7 +81,7 @@ def several_datasets(datasets_mapping, params: HyperParams):
 
     test_loader = DataLoader(concat_test_datasets, batch_size=params.batch_size, shuffle=True)
 
-    default_training(train_loader, test_loader, params)
+    hyper_parameter_exploration(train_loader, test_loader)
 
 
 def hyper_parameter_exploration(train_loader, test_loader):
