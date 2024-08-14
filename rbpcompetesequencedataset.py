@@ -19,7 +19,6 @@ class RbpCompeteSequenceDataset(Dataset):
         with open(sequence_file, 'r') as f:
             for line in f:
                 encoded_sequence, sequence_length = sequence_encoder.encode_embedding(line.strip(), self.possible_encodings, self.k, self.padded_sequence_max_legnth)
-                # sequences.append(encoded_sequence.float())
                 sequences.append(encoded_sequence)
 
                 sequences_length.append(sequence_length)
@@ -28,7 +27,6 @@ class RbpCompeteSequenceDataset(Dataset):
 
     def _load_data(self):
         with open(self.rbp_file, 'r') as f:
-            # rbps = [rna_sequence_encoder.encode_rna(_).float() for _ in f]
             rbps = [torch.Tensor([float(_)]).squeeze(-1) for _ in f]
             data = list(zip(self.sequences, self.sequences_length, rbps))
         return data

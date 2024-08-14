@@ -9,20 +9,24 @@ class PredictionModel(nn.Module):
     def __init__(self, args: HyperParams):
         super().__init__()
         self.embedding = nn.Embedding(args.embedding_dict_size, args.embedding_vector_size)
+        self.pre_lstm_dropout = nn.Dropout(args.dropout)
         self.lstm_cell = nn.LSTM(input_size=args.one_hot_size,
                                  hidden_size=args.lstm_hidden_size,
                                  num_layers=args.lstm_layers,
                                  bidirectional=args.is_bidirectional,
                                  batch_first=True)
         self.post_lstm_net = nn.Sequential(
-            nn.SiLU(),
+            nn.LeakyReLU(),
+            nn.Dropout(args.dropout),
             nn.Linear(args.lstm_hidden_size, 3*args.lstm_hidden_size),
-            nn.SiLU(),
+            nn.LeakyReLU(),
+            nn.Dropout(args.dropout),
             nn.Linear(3*args.lstm_hidden_size, args.lstm_hidden_size),
-            nn.SiLU(),
-            nn.Linear(args.lstm_hidden_size, args.prediction_classes),
+            nn.LeakyReLU(),
+            nn.Dropout(args.dropout),
+            nn.Linear(args.lstm_hidden_size, 1),
+            nn.Sigmoid()
         )
-        # self.fc1 = nn.Linear(args.lstm_hidden_size, args.prediction_classes)
         self.args: HyperParams = args
 
     def forward(self, x, x_size=None):
@@ -34,4 +38,4 @@ class PredictionModel(nn.Module):
         h, c = self.lstm_cell(embedded_x, (h_t, c_t))
         last_indices = (x_size - 1).unsqueeze(2).expand(x_batch_size, 1, self.args.lstm_hidden_size)
         last_hidden = h.gather(1, last_indices).squeeze(1)
-        return self.post_lstm_net(last_hidden)
+        return self.post_lstm_net(last_hidden).squeeze(1)

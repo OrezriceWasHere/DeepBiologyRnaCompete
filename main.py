@@ -12,7 +12,7 @@ from hyper_parmas import HyperParams
 from clearml_poc import clearml_init
 import trainer
 from sequence_encoder import stack_batch as collate_fn
-from torch.utils.data import DataLoader, ConcatDataset, TensorDataset
+from torch.utils.data import DataLoader
 
 
 def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params, device):
@@ -62,26 +62,19 @@ def dataset_index_to_testset(datasets, dataset_index, params: HyperParams):
 
 
 def several_datasets(datasets_mapping, params: HyperParams):
-    training_datasets = [0, 1, 2, 3]
+    training_datasets = [0, 1, 2, 3, 5, 6, 7, 8, 9, 4]
     testing_datasets = [4]
     print("training datasets " + str(training_datasets))
     print("testing datasets " + str(testing_datasets))
     train_datasets = [dataset_index_to_trainset(datasets_mapping, dataset_index, params) for dataset_index in
                       training_datasets]
+    train_loaders = [DataLoader(dataset, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
+                     for dataset in train_datasets]
     test_datasets = [dataset_index_to_testset(datasets_mapping, dataset_index, params) for dataset_index in
                      testing_datasets]
+    test_loaders = [DataLoader(dataset, batch_size=params.batch_size, shuffle=True) for dataset in test_datasets]
 
-    concat_train_dataset = ConcatDataset(train_datasets)
-    concat_test_datasets = ConcatDataset(test_datasets)
-
-    train_loader = DataLoader(concat_train_dataset,
-                              batch_size=params.batch_size,
-                              shuffle=True,
-                              collate_fn=collate_fn)
-
-    test_loader = DataLoader(concat_test_datasets, batch_size=params.batch_size, shuffle=True)
-
-    hyper_parameter_exploration(train_loader, test_loader)
+    default_training(train_loaders, test_loaders, params)
 
 
 def hyper_parameter_exploration(train_loader, test_loader):
@@ -92,7 +85,7 @@ def hyper_parameter_exploration(train_loader, test_loader):
 
     print("starting optuna")
     study = optuna.create_study(direction="maximize")
-    study.optimize(optuna_single_trial, n_trials=30)
+    study.optimize(optuna_single_trial, n_trials=10)
 
     print("Best trial:")
     trial = study.best_trial
@@ -112,12 +105,25 @@ def default_training(train_loader: DataLoader | list[DataLoader], test_loader: D
     if not optimizer:
         optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
+    if isinstance(train_loader, DataLoader):
+        train_loader = [train_loader]
+
+    if isinstance(test_loader, DataLoader):
+        test_loader = [test_loader]
+
     pearson_correlation = 0
 
     for epoch in trange(params.epochs):
-        trainer.train(model, optimizer, train_loader, device, epoch, params)
-        pearson_correlation = trainer.test(model, test_loader, device, epoch, params)
 
+        for loader in train_loader:
+            trainer.train(model, optimizer, loader, device, epoch, params)
+
+        pearson_correlations = []
+        for loader in test_loader:
+            pearson_correlation = trainer.test(model, loader, device, epoch, params)
+            pearson_correlations.append(pearson_correlation)
+
+        pearson_correlation = sum(pearson_correlations) / len(pearson_correlations)
     return pearson_correlation
 
 

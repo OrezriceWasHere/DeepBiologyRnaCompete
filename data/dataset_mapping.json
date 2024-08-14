@@ -55,5 +55,65 @@
       "sequences": "RBP5.txt",
       "intensities": "RNAcompete_sequences_rc.txt"
     }
+  },
+  {
+    "train": [
+      "RBP6_1.txt",
+      "RBP6_2.txt",
+      "RBP6_3.txt",
+      "RBP6_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP6.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP7_1.txt",
+      "RBP7_2.txt",
+      "RBP7_3.txt",
+      "RBP7_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP7.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP8_1.txt",
+      "RBP8_2.txt",
+      "RBP8_3.txt",
+      "RBP8_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP8.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP9_1.txt",
+      "RBP9_2.txt",
+      "RBP9_3.txt",
+      "RBP9_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP9.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP10_1.txt",
+      "RBP10_2.txt",
+      "RBP10_3.txt"
+    ],
+    "test": {
+      "sequences": "RBP10.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
   }
+
 ]

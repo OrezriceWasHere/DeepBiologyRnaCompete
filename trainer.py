@@ -17,6 +17,11 @@ def get_class_inverse_weights(train_loader: DataLoader):
     for dataset in datasets:
         counter = counter + Counter([item[2].item() for item in dataset.data])
 
+    avg = sum(counter.values()) / len(counter)
+    for x in range(4):
+        if x not in counter:
+            counter[x] = avg
+
     total = sum(counter.values())
     inverse = [total / (counter[key] * len(counter)) for key in counter.keys()]
     return torch.tensor(inverse, dtype=torch.float32)
@@ -25,12 +30,13 @@ def get_class_inverse_weights(train_loader: DataLoader):
 def train(model: PredictionModel, optimizer, train_loader, device, epoch, params):
     model.train()
     sum_loss = 0
-    balance = get_class_inverse_weights(train_loader).to(device)
-    criterion = torch.nn.CrossEntropyLoss()
+    # balance = get_class_inverse_weights(train_loader).to(device)
     # criterion = torch.nn.CrossEntropyLoss(weight=balance)
+
+    criterion = torch.nn.HuberLoss()
     for sequences, lengths, labels in train_loader:
         sequences, lengths, labels = sequences.to(device), lengths.to(device), labels.to(device)
-
+        labels = (labels.float() * 0.3333)
         optimizer.zero_grad()
         outputs = model(sequences, lengths)
         loss = criterion(outputs, labels)
@@ -51,9 +57,11 @@ def test(model: PredictionModel, test_loader, device, epoch, params):
         intensities.extend(torch.flatten(intensity).tolist())
         sequences, lengths = sequences.to(device), lengths.to(device)
         # intensity_predictions = torch.argmax(model(sequences, lengths), dim=-1).cpu().tolist()
-        outputs = F.softmax(model(sequences, lengths), dim=-1)
-        intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
-        predictions.extend(intensity_predictions)
+        # outputs = F.softmax(model(sequences, lengths), dim=-1)
+        # outputs = F.sigmoid(model(sequences, lengths))
+        outputs = model(sequences, lengths)
+        # intensity_predictions = torch.sum(outputs, dim=1).cpu().tolist()
+        predictions.extend(outputs.cpu().tolist())
 
     x = np.asarray(intensities)
     y = np.asarray(predictions)
