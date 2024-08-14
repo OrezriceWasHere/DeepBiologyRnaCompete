@@ -1,4 +1,5 @@
 import argparse
+import json
 import torch
 from tqdm import trange
 import optuna
@@ -11,17 +12,25 @@ from hyper_parmas import HyperParams
 from clearml_poc import clearml_init
 import trainer
 from sequence_encoder import stack_batch as collate_fn
+from torch.utils.data import DataLoader
 
 
 def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params, device):
     print(f"action is :{action}")
+
+    if action == 'several_datasets':
+        datasets = json.load(open("data/dataset_mapping.json"))
+        several_datasets(datasets, params)
+        return
+
     k = params.embedding_char_length
     padded_sequence_max_legnth = params.padding_max_size
     train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files, k, padded_sequence_max_legnth)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True,
                                                collate_fn=collate_fn)
 
-    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file, k, padded_sequence_max_legnth)
+    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file, k,
+                                                                       padded_sequence_max_legnth)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
 
     if action == 'hyperparam_exploration':
@@ -29,6 +38,43 @@ def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params
 
     elif action == 'default_training':
         default_training(train_loader, test_loader, params)
+
+
+def dataset_index_to_trainset(datasets, dataset_index, params: HyperParams):
+    dataset_files = datasets[dataset_index]["train"]
+    htr_selex_files = [f'./data/{file}' for file in dataset_files]
+    k = params.embedding_char_length
+    padded_sequence_max_length = params.padding_max_size
+    train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files, k, padded_sequence_max_length)
+
+    return train_dataset
+
+
+def dataset_index_to_testset(datasets, dataset_index, params: HyperParams):
+    test_sequences = "./data/" + datasets[dataset_index]["test"]["sequences"]
+    test_intensities = "./data/" + datasets[dataset_index]["test"]["intensities"]
+    k = params.embedding_char_length
+    padded_sequence_max_length = params.padding_max_size
+
+    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(test_sequences, test_intensities, k,
+                                                                       padded_sequence_max_length)
+    return test_dataset
+
+
+def several_datasets(datasets_mapping, params: HyperParams):
+    training_datasets = [0, 1, 2, 3, 5, 6, 7, 8, 9, 4]
+    testing_datasets = [4]
+    print("training datasets " + str(training_datasets))
+    print("testing datasets " + str(testing_datasets))
+    train_datasets = [dataset_index_to_trainset(datasets_mapping, dataset_index, params) for dataset_index in
+                      training_datasets]
+    train_loaders = [DataLoader(dataset, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
+                     for dataset in train_datasets]
+    test_datasets = [dataset_index_to_testset(datasets_mapping, dataset_index, params) for dataset_index in
+                     testing_datasets]
+    test_loaders = [DataLoader(dataset, batch_size=params.batch_size, shuffle=True) for dataset in test_datasets]
+
+    default_training(train_loaders, test_loaders, params)
 
 
 def hyper_parameter_exploration(train_loader, test_loader):
@@ -39,7 +85,7 @@ def hyper_parameter_exploration(train_loader, test_loader):
 
     print("starting optuna")
     study = optuna.create_study(direction="maximize")
-    study.optimize(optuna_single_trial, n_trials=30)
+    study.optimize(optuna_single_trial, n_trials=10)
 
     print("Best trial:")
     trial = study.best_trial
@@ -51,25 +97,42 @@ def hyper_parameter_exploration(train_loader, test_loader):
         print("    {}: {}".format(key, value))
 
 
-def default_training(train_loader, test_loader, params, model=None, optimizer=None):
+def default_training(train_loader: DataLoader | list[DataLoader], test_loader: DataLoader | list[DataLoader],
+                     params, model=None, optimizer=None):
     if not model:
         model = PredictionModel(params).to(device)
 
     if not optimizer:
         optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
-    pearson_correlation = 0
-    for epoch in trange(params.epochs):
-        trainer.train(model, optimizer, train_loader, device, epoch, params)
-        pearson_correlation = trainer.test(model, test_loader, device, epoch, params)
+    if isinstance(train_loader, DataLoader):
+        train_loader = [train_loader]
 
+    if isinstance(test_loader, DataLoader):
+        test_loader = [test_loader]
+
+    pearson_correlation = 0
+
+    for epoch in trange(params.epochs):
+
+        for loader in train_loader:
+            trainer.train(model, optimizer, loader, device, epoch, params)
+
+        pearson_correlations = []
+        for loader in test_loader:
+            pearson_correlation = trainer.test(model, loader, device, epoch, params)
+            pearson_correlations.append(pearson_correlation)
+
+        pearson_correlation = sum(pearson_correlations) / len(pearson_correlations)
     return pearson_correlation
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action',
-                        choices=['hyperparam_exploration', 'default_training'],
+                        choices=['hyperparam_exploration',
+                                 'default_training',
+                                 'several_datasets'],
                         nargs='?',
                         default='default_training',
                         help='action')
@@ -78,6 +141,10 @@ if __name__ == "__main__":
                         nargs='?',
                         type=str,
                         help='sequences file')
+    parser.add_argument('rna_intensities',
+                        default='./data/RBP1.txt',
+                        nargs='?',
+                        help='rna compete intensities')
     parser.add_argument('htr_selex_files',
                         default=['./data/RBP1_1.txt',
                                  './data/RBP1_2.txt',
@@ -85,7 +152,6 @@ if __name__ == "__main__":
                                  './data/RBP1_4.txt', ],
                         nargs='*',
                         help='htr selex files')
-    default_rna_compete_intensities = './data/RBP1.txt'
     args = parser.parse_args()
     params = HyperParams
     clearml_init(args, params)
@@ -94,4 +160,4 @@ if __name__ == "__main__":
     print(f"device: {device}")
     action = clearml_poc.get_param("action") or args.action
 
-    init(args.rna_compete_sequences, args.htr_selex_files, default_rna_compete_intensities, action, params, device)
+    init(args.rna_compete_sequences, args.htr_selex_files, args.rna_intensities, action, params, device)

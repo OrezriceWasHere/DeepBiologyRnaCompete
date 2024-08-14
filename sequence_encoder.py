@@ -9,8 +9,6 @@ ignore = ['N']
 max_len = 41
 
 
-
-
 def all_possible_encodings(k: int, alphabet: list[str]) -> dict:
     possible_kmers = list(product(alphabet, repeat=k)) + alphabet + ["X"]
     return {"".join(value): index for index, value in enumerate(possible_kmers)}
@@ -32,7 +30,7 @@ def encode_embedding(sequence, mapping, k, padded_sequence_max_legnth):
     one_length_pieces = len(sequence) % k
     empty_pieces = padded_sequence_max_legnth - k_length_pieces - one_length_pieces
     original_length = k_length_pieces + one_length_pieces
-    k_length_encodings = [mapping[sequence[i * k : (i+1) * k]]
+    k_length_encodings = [mapping[sequence[i * k: (i + 1) * k]]
                           for i
                           in range(k_length_pieces)]
     one_length_encodings = [
@@ -62,4 +60,6 @@ def stack_batch(batch):
     length = torch.stack(length, dim=0)
     target = torch.stack(target, dim=0)
 
-    return data, length, target
+    pair = (data, length, target)
+
+    return pair

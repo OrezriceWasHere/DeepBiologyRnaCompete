@@ -5,7 +5,9 @@ from torch.utils.data import Dataset, DataLoader
 
 import sequence_encoder
 import sequence_generator
-RBP_DEF_FILE_NAME = './RBP1_1.txt'
+
+RBP_DEF_FILE_NAME = './RBP_EXTRA.txt'
+
 
 class RbpSelexDataset(Dataset):
     def __init__(self, rbps_files, embedding_size, padded_sequence_max_legnth):
@@ -15,9 +17,7 @@ class RbpSelexDataset(Dataset):
         self.k = embedding_size
         self.padded_sequence_max_legnth = padded_sequence_max_legnth
 
-        if len(rbps_files) == 1:
-            sequence_generator.generate_rbp_file(RBP_DEF_FILE_NAME)
-            rbps_files.append(RBP_DEF_FILE_NAME)
+        # rbps_files.append(RBP_DEF_FILE_NAME)
 
         for file in self.rbps_files:
             with open(file, 'r') as f:
@@ -33,6 +33,21 @@ class RbpSelexDataset(Dataset):
                     # encoded_sequence = encoded_sequence.long()
                     tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1  # Subtract 1 to make the labels 0-based
                     self.data.append((encoded_sequence, sequence_length, tensor_label))
+        #
+        # if len(rbps_files) == 1:
+        #     lines = sequence_generator.generate_rbp_list(num_lines=len(self.data))
+        #     for line in lines:
+        #         sequence = line
+        #         label = 1
+        #         encoded_sequence, sequence_length = sequence_encoder.encode_embedding(sequence,
+        # #                                                                               self.possible_encodings,
+        #                                                                               self.k,
+        #                                                                               self.padded_sequence_max_legnth)
+                # Extract the label
+                # encoded_sequence, sequence_length = sequence_encoder.encode_dna(sequence)
+                # encoded_sequence = encoded_sequence.long()
+                tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1
+                self.data.append((encoded_sequence, sequence_length, tensor_label))
 
     def __len__(self):
         return len(self.data)
