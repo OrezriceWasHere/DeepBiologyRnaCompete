@@ -62,7 +62,7 @@ def dataset_index_to_testset(datasets, dataset_index, params: HyperParams):
 
 
 def several_datasets(datasets_mapping, params: HyperParams):
-    training_datasets = [0, 1, 2, 3, 5, 6, 7, 8, 9, 4]
+    training_datasets = [0, 1, 2, 3, 4]
     testing_datasets = [4]
     print("training datasets " + str(training_datasets))
     print("testing datasets " + str(testing_datasets))

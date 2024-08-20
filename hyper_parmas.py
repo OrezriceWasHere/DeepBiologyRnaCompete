@@ -1,17 +1,17 @@
 class HyperParams:
-    lr: float = 9.8e-5
-    one_hot_size: int = 14
-    embedding_vector_size: int = 14
+    lr: float = 1.5e-5
+    one_hot_size: int = 17
+    embedding_vector_size: int = 17
     batch_size: int = 4096
     epochs: int = 50
     lstm_layers: int = 2
-    lstm_hidden_size: int = 200
+    lstm_hidden_size: int = 240
     prediction_classes: int = 4
-    embedding_char_length: int = 3
-    embedding_dict_size: int = 200
+    embedding_char_length: int = 4
+    embedding_dict_size: int = 500
     padding_max_size: int = 20
     is_bidirectional: bool = False
-    dropout: float = 0.5
+    dropout: float = 0.2
 
 
 def optuna_suggest_hyperparams(trial) -> HyperParams:
@@ -23,5 +23,6 @@ def optuna_suggest_hyperparams(trial) -> HyperParams:
     hyper_params.embedding_vector_size = trial.suggest_int('embedding_vector_size', 2, 20)
     hyper_params.dropout = trial.suggest_categorical('dropout', [0, 0.1, 0.2, 0.3, 0.4, 0.5])
     hyper_params.one_hot_size = hyper_params.embedding_vector_size
+    hyper_params.embedding_dict_size = (4 ** hyper_params.embedding_char_length) * 1.2
 
     return hyper_params

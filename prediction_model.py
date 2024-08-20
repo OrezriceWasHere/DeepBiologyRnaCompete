@@ -24,8 +24,7 @@ class PredictionModel(nn.Module):
             nn.Linear(3*args.lstm_hidden_size, args.lstm_hidden_size),
             nn.LeakyReLU(),
             nn.Dropout(args.dropout),
-            nn.Linear(args.lstm_hidden_size, 1),
-            nn.Sigmoid()
+            nn.Linear(args.lstm_hidden_size, args.prediction_classes),
         )
         self.args: HyperParams = args
 
