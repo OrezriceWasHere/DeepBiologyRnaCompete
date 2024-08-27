@@ -52,19 +52,19 @@ def test(model: PredictionModel, test_loader, device, epoch, params):
     predictions = []
     intensities = []
 
-    intensity_values = torch.tensor([x for x in range(4)]).to(device)
+    intensity_values = torch.tensor([x for x in range(0, 4)]).to(device)
     for sequences, lengths, intensity in test_loader:
         intensities.extend(torch.flatten(intensity).tolist())
         sequences, lengths = sequences.to(device), lengths.to(device)
-        # intensity_predictions = torch.argmax(model(sequences, lengths), dim=-1).cpu().tolist()
-        outputs = F.softmax(model(sequences, lengths), dim=-1)
-        # outputs = F.sigmoid(model(sequences, lengths))
+        intensity_predictions = torch.argmax(model(sequences, lengths), dim=-1).cpu().tolist()
+        # outputs = F.softmax(model(sequences, lengths), dim=-1)
+        outputs = F.sigmoid(model(sequences, lengths))
         # outputs = model(sequences, lengths)
         intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
         predictions.extend(intensity_predictions)
 
     x = np.asarray(intensities)
     y = np.asarray(predictions)
-    pearson_correlation = np.corrcoef(x, y=y)[0][1]
+    pearson_correlation = abs(np.corrcoef(x, y=y)[0][1])
     clearml_poc.add_point_to_graph("Pearson Correlation", "test " + str(vars(params)), epoch, pearson_correlation)
     return pearson_correlation

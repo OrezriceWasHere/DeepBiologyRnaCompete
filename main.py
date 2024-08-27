@@ -13,6 +13,8 @@ from clearml_poc import clearml_init
 import trainer
 from sequence_encoder import stack_batch as collate_fn
 from torch.utils.data import DataLoader
+from pathlib import Path
+import uuid
 
 
 def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params, device):
@@ -21,6 +23,11 @@ def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params
     if action == 'several_datasets':
         datasets = json.load(open("data/dataset_mapping.json"))
         several_datasets(datasets, params)
+        return
+
+    if action == 'test_all':
+        datasets = json.load(open("data/dataset_mapping.json"))
+        overall_experiment(datasets, params)
         return
 
     k = params.embedding_char_length
@@ -61,9 +68,8 @@ def dataset_index_to_testset(datasets, dataset_index, params: HyperParams):
     return test_dataset
 
 
-
 def several_datasets(datasets_mapping, params: HyperParams):
-    training_datasets = [0, 1, 2, 3, 4]
+    training_datasets = [0, 1, 2, 3]
     testing_datasets = [4]
     print("training datasets " + str(training_datasets))
     print("testing datasets " + str(testing_datasets))
@@ -99,9 +105,13 @@ def hyper_parameter_exploration(train_loader, test_loader):
 
 
 def default_training(train_loader: DataLoader | list[DataLoader], test_loader: DataLoader | list[DataLoader],
-                     params, model=None, optimizer=None):
+                     params, model=None, optimizer=None, store_model=True):
     if not model:
         model = PredictionModel(params).to(device)
+
+    # path = "model.pt"
+    # if Path(path).exists():
+    #     model.load_state_dict(torch.load(path, weights_only=True))
 
     if not optimizer:
         optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
@@ -125,17 +135,62 @@ def default_training(train_loader: DataLoader | list[DataLoader], test_loader: D
             pearson_correlations.append(pearson_correlation)
 
         pearson_correlation = sum(pearson_correlations) / len(pearson_correlations)
+        if store_model:
+            write_model(model, params, pearson_correlation)
+
     return pearson_correlation
+
+
+def overall_experiment(datasets_mapping, params: HyperParams):
+    testing_datasets = list(range(10, 38))
+    sum_pearson = 0
+    count = 0
+    for dataset_index in testing_datasets:
+        train_dataset = dataset_index_to_trainset(datasets_mapping, dataset_index, params)
+        print(f'dataset files: {train_dataset.rbps_files}')
+        train_loader = DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
+        model = PredictionModel(params).to(device)
+        path = "model.pt"
+        # if Path(path).exists() and len(train_dataset.rbps_files) == 1:
+        #     print("loading model")
+        #     model.load_state_dict(torch.load(path, weights_only=True))
+
+        test_dataset = dataset_index_to_testset(datasets_mapping, dataset_index, params)
+        test_loader = DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
+        default_training(train_loader, test_loader, params, model=model, store_model=False)
+        pearson_correlation = trainer.test(model, test_loader, device, 1, params)
+        sum_pearson += pearson_correlation
+        count += 1
+        clearml_poc.add_point_to_graph("pearson correlation", "running average", 1, sum_pearson / count)
+        print(f"average so far is {sum_pearson / count}")
+
+    print(f"average pearson correlation is {sum_pearson / len(testing_datasets)}")
+
+
+MODEL_OUTPUT_DIR = "model_output/"
+pearson_best_epoch = 0
+
+
+def write_model(model, params, pearson_result):
+
+    output_file = Path(MODEL_OUTPUT_DIR + "model" + ".pt")
+    output_file.parent.mkdir(exist_ok=True, parents=True)
+
+    print(f'new pearson result is {pearson_result}. saving model')
+    pearson_best_epoch = pearson_result
+    torch.save(model.state_dict(), str(output_file))
+    clearml_poc.upload_model_to_clearml(str(output_file), params)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action',
                         choices=['hyperparam_exploration',
+                                 'test_all',
                                  'default_training',
                                  'several_datasets'],
                         nargs='?',
-                        default='default_training',
+                        default='several_datasets',
                         help='action')
     parser.add_argument('rna_compete_sequences',
                         default="./data/RNAcompete_sequences_rc.txt",
@@ -147,18 +202,20 @@ if __name__ == "__main__":
                         nargs='?',
                         help='rna compete intensities')
     parser.add_argument('htr_selex_files',
-                        default=['./data/RBP1_1.txt',
-                                 './data/RBP1_2.txt',
-                                 './data/RBP1_3.txt',
-                                 './data/RBP1_4.txt', ],
+                        default=[
+                            './data/RBP1_1.txt',
+                            './data/RBP1_2.txt',
+                            './data/RBP1_3.txt',
+                            './data/RBP1_4.txt',
+                        ],
                         nargs='*',
                         help='htr selex files')
     args = parser.parse_args()
     params = HyperParams
     clearml_init(args, params)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
     action = clearml_poc.get_param("action") or args.action
-
+    action = "test_all"
     init(args.rna_compete_sequences, args.htr_selex_files, args.rna_intensities, action, params, device)

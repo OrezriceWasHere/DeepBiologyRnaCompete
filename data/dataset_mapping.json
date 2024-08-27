@@ -114,6 +114,334 @@
       "sequences": "RBP10.txt",
       "intensities": "RNAcompete_sequences_rc.txt"
     }
+  },
+  {
+    "train": [
+      "RBP11_1.txt",
+      "RBP11_2.txt",
+      "RBP11_3.txt",
+      "RBP11_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP11.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP12_1.txt",
+      "RBP12_2.txt",
+      "RBP12_3.txt",
+      "RBP12_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP12.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP13_1.txt",
+      "RBP13_2.txt",
+      "RBP13_3.txt",
+      "RBP13_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP13.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP14_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP14.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP15_1.txt",
+      "RBP15_2.txt",
+      "RBP15_3.txt",
+      "RBP15_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP15.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP16_1.txt",
+      "RBP16_2.txt",
+      "RBP16_3.txt",
+      "RBP16_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP16.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP17_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP17.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP18_1.txt",
+      "RBP18_2.txt",
+      "RBP18_3.txt",
+      "RBP18_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP18.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP19_1.txt",
+      "RBP19_2.txt",
+      "RBP19_3.txt",
+      "RBP19_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP19.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP20_1.txt",
+      "RBP20_2.txt",
+      "RBP20_3.txt",
+      "RBP20_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP20.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP21_1.txt",
+      "RBP21_2.txt",
+      "RBP21_3.txt",
+      "RBP21_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP21.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP22_1.txt",
+      "RBP22_2.txt",
+      "RBP22_3.txt",
+      "RBP22_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP22.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP23_1.txt",
+      "RBP23_2.txt",
+      "RBP23_3.txt",
+      "RBP23_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP23.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP24_1.txt",
+      "RBP24_2.txt",
+      "RBP24_3.txt",
+      "RBP24_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP24.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP25_1.txt",
+      "RBP25_2.txt",
+      "RBP25_3.txt",
+      "RBP25_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP25.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP26_1.txt",
+      "RBP26_2.txt",
+      "RBP26_3.txt",
+      "RBP26_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP26.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP27_1.txt",
+      "RBP27_2.txt",
+      "RBP27_3.txt",
+      "RBP27_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP27.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP28_1.txt",
+      "RBP28_2.txt",
+      "RBP28_3.txt"
+    ],
+    "test": {
+      "sequences": "RBP28.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP29_1.txt",
+      "RBP29_2.txt",
+      "RBP29_3.txt",
+      "RBP29_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP29.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP30_1.txt",
+      "RBP30_2.txt",
+      "RBP30_3.txt",
+      "RBP30_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP30.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP31_1.txt",
+      "RBP31_2.txt",
+      "RBP31_3.txt",
+      "RBP31_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP31.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP32_1.txt",
+      "RBP32_2.txt",
+      "RBP32_3.txt",
+      "RBP32_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP32.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP33_1.txt",
+      "RBP33_2.txt",
+      "RBP33_3.txt",
+      "RBP33_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP33.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP34_1.txt",
+      "RBP34_2.txt",
+      "RBP34_3.txt",
+      "RBP34_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP34.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP35_1.txt",
+      "RBP35_2.txt",
+      "RBP35_3.txt",
+      "RBP35_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP35.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP36_1.txt",
+      "RBP36_2.txt",
+      "RBP36_3.txt",
+      "RBP36_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP36.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP37_1.txt",
+      "RBP37_2.txt",
+      "RBP37_3.txt",
+      "RBP37_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP37.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
+  },
+  {
+    "train": [
+      "RBP38_1.txt",
+      "RBP38_2.txt",
+      "RBP38_3.txt",
+      "RBP38_4.txt"
+    ],
+    "test": {
+      "sequences": "RBP38.txt",
+      "intensities": "RNAcompete_sequences_rc.txt"
+    }
   }
-
 ]
