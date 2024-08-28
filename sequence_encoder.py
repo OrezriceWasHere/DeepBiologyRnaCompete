@@ -24,23 +24,28 @@ def encode(sequence: str, mapping: dict) -> tuple[torch.Tensor, torch.Tensor]:
 
 
 def encode_embedding(sequence, mapping, k, padded_sequence_max_legnth):
-    for delete_char in ignore:
-        sequence = sequence.replace(delete_char, "")
-    k_length_pieces = math.floor(len(sequence) / k)
-    one_length_pieces = len(sequence) % k
-    empty_pieces = padded_sequence_max_legnth - k_length_pieces - one_length_pieces
-    original_length = k_length_pieces + one_length_pieces
-    k_length_encodings = [mapping[sequence[i * k: (i + 1) * k]]
-                          for i
-                          in range(k_length_pieces)]
-    one_length_encodings = [
-        mapping[sequence[k * k_length_pieces + i]]
-        for i in range(one_length_pieces)
-    ]
-    empty_encoding = [mapping["X"] for _ in range(empty_pieces)]
-    combined_encoding = k_length_encodings + one_length_encodings + empty_encoding
+    try:
+        for delete_char in ignore:
+            sequence = sequence.replace(delete_char, "")
+        k_length_pieces = math.floor(len(sequence) / k)
+        one_length_pieces = len(sequence) % k
+        empty_pieces = padded_sequence_max_legnth - k_length_pieces - one_length_pieces
+        original_length = k_length_pieces + one_length_pieces
+        k_length_encodings = [mapping[sequence[i * k: (i + 1) * k]]
+                              for i
+                              in range(k_length_pieces)]
+        one_length_encodings = [
+            mapping[sequence[k * k_length_pieces + i]]
+            for i in range(one_length_pieces)
+        ]
+        empty_encoding = [mapping["X"] for _ in range(empty_pieces)]
+        combined_encoding = k_length_encodings + one_length_encodings + empty_encoding
 
-    return torch.tensor(combined_encoding, dtype=torch.long), torch.Tensor([original_length]).long()
+        return torch.tensor(combined_encoding, dtype=torch.long), torch.Tensor([original_length]).long()
+
+    except KeyError as e:
+        print(f"Error: {e}")
+        raise e
 
 
 def encode_dna(sequence: str) -> torch.Tensor:

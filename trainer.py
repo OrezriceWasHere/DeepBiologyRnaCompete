@@ -30,13 +30,10 @@ def get_class_inverse_weights(train_loader: DataLoader):
 def train(model: PredictionModel, optimizer, train_loader, device, epoch, params):
     model.train()
     sum_loss = 0
-    # balance = get_class_inverse_weights(train_loader).to(device)
     criterion = torch.nn.CrossEntropyLoss()
 
-    # criterion = torch.nn.HuberLoss()
     for sequences, lengths, labels in train_loader:
         sequences, lengths, labels = sequences.to(device), lengths.to(device), labels.to(device)
-        # labels = (labels.float() * 0.3333)
         optimizer.zero_grad()
         outputs = model(sequences, lengths)
         loss = criterion(outputs, labels)
@@ -56,10 +53,7 @@ def test(model: PredictionModel, test_loader, device, epoch, params):
     for sequences, lengths, intensity in test_loader:
         intensities.extend(torch.flatten(intensity).tolist())
         sequences, lengths = sequences.to(device), lengths.to(device)
-        intensity_predictions = torch.argmax(model(sequences, lengths), dim=-1).cpu().tolist()
-        # outputs = F.softmax(model(sequences, lengths), dim=-1)
         outputs = F.sigmoid(model(sequences, lengths))
-        # outputs = model(sequences, lengths)
         intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
         predictions.extend(intensity_predictions)
 
@@ -68,3 +62,14 @@ def test(model: PredictionModel, test_loader, device, epoch, params):
     pearson_correlation = abs(np.corrcoef(x, y=y)[0][1])
     clearml_poc.add_point_to_graph("Pearson Correlation", "test " + str(vars(params)), epoch, pearson_correlation)
     return pearson_correlation
+
+def predict(model: PredictionModel, data_loader: DataLoader, device):
+    model.eval()
+    intensity_values = torch.tensor([x for x in range(0, 4)]).to(device)
+
+    with torch.no_grad():
+        for sequences, lengths in data_loader:
+            sequences, lengths = sequences.to(device), lengths.to(device)
+            outputs = F.sigmoid(model(sequences, lengths))
+            intensity_predictions = torch.sum(outputs * intensity_values, dim=1).cpu().tolist()
+            yield sequences, intensity_predictions

@@ -2,7 +2,7 @@ import os
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-
+from tqdm import tqdm
 import sequence_encoder
 import sequence_generator
 
@@ -19,11 +19,18 @@ class RbpSelexDataset(Dataset):
 
         # rbps_files.append(RBP_DEF_FILE_NAME)
 
-        for file in self.rbps_files:
-            with open(file, 'r') as f:
-                for line in f:
+        for file in tqdm(self.rbps_files):
+            with open(file, 'r', encoding='utf-8') as f:
+                detected_faulty_in_line = False
+                label = int(file[:-4].split('_')[-1])
+
+                for lindex, line in enumerate(f):
+
+                    if len(line) > 55:
+                        print(f"There is something wrong with line reading. read string with size {len(line)} in file {file} at line #{lindex}")
+                        detected_faulty_in_line = True
+                        continue
                     sequence, _ = line.strip().split(',')
-                    label = int(file[:-4].split('_')[1])
                     encoded_sequence, sequence_length = sequence_encoder.encode_embedding(sequence,
                                                                                           self.possible_encodings,
                                                                                           self.k,
@@ -33,21 +40,8 @@ class RbpSelexDataset(Dataset):
                     # encoded_sequence = encoded_sequence.long()
                     tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1  # Subtract 1 to make the labels 0-based
                     self.data.append((encoded_sequence, sequence_length, tensor_label))
-
-        # if len(rbps_files) == 1:
-        #     lines = sequence_generator.generate_rbp_list(num_lines=len(self.data))
-        #     for line in lines:
-        #         sequence = line
-        #         label = 1
-        #         encoded_sequence, sequence_length = sequence_encoder.encode_embedding(sequence,
-        #                                                                               self.possible_encodings,
-        #                                                                               self.k,
-        #                                                                               self.padded_sequence_max_legnth)
-        #         # Extract the label
-        #         # encoded_sequence, sequence_length = sequence_encoder.encode_dna(sequence)
-        #         # encoded_sequence = encoded_sequence.long()
-        #         tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1
-        #         self.data.append((encoded_sequence, sequence_length, tensor_label))
+                if detected_faulty_in_line:
+                    print(f"read {lindex} lines from file {file}")
 
     def __len__(self):
         return len(self.data)

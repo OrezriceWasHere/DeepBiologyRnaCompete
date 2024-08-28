@@ -2,6 +2,31 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import sequence_encoder
 
+class RbpCompeteSequenceNoIntensityDataset(Dataset):
+    def __init__(self, sequence_file, k, padded_sequence_max_legnth):
+        self.sequence_file = sequence_file
+        self.possible_encodings = sequence_encoder.all_possible_encodings(k, ['A', 'C', 'G', 'T'])
+        self.padded_sequence_max_legnth = padded_sequence_max_legnth
+        self.k = k
+        self.sequences, self.sequences_length = self._load_sequences(sequence_file)
+
+    def _load_sequences(self, sequence_file):
+        sequences = []
+        sequences_length = []
+        with open(sequence_file, 'r') as f:
+            for line in f:
+                encoded_sequence, sequence_length = sequence_encoder.encode_embedding(line.strip(), self.possible_encodings, self.k, self.padded_sequence_max_legnth)
+                sequences.append(encoded_sequence)
+                sequences_length.append(sequence_length)
+        return sequences, sequences_length
+
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, idx):
+        return self.sequences[idx], self.sequences_length[idx]
+
+
 
 class RbpCompeteSequenceDataset(Dataset):
     def __init__(self, rbp_file, sequence_file, k, padded_sequence_max_legnth):
