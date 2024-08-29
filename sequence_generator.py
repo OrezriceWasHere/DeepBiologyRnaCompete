@@ -1,3 +1,4 @@
+# sequence generator is is a tool to generate random rbp file.
 import random
 
 
