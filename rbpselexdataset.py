@@ -2,63 +2,63 @@ import os
 
 import torch
 from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+import sequence_encoder
+import sequence_generator
 
-import sequence_encoder  # Custom module for encoding DNA sequences.
-import sequence_generator  # Custom module for generating sequence files.
+RBP_DEF_FILE_NAME = './RBP_EXTRA.txt'
 
-# Define a constant for a default RBP (RNA-binding protein) file name.
-RBP_DEF_FILE_NAME = './RBP1_1.txt'
 
-# Custom dataset class for loading and processing RBPSelex.
 class RbpSelexDataset(Dataset):
-    def __init__(self, rbps_files):
-        self.rbps_files = rbps_files  # List of RBP files provided as input.
-        self.data = []  # List to store the encoded sequences and labels.
+    def __init__(self, rbps_files, embedding_size, padded_sequence_max_legnth):
+        self.rbps_files = rbps_files
+        self.data = []
+        self.possible_encodings = sequence_encoder.all_possible_encodings(embedding_size, ['A', 'C', 'G', 'T'])
+        self.k = embedding_size
+        self.padded_sequence_max_legnth = padded_sequence_max_legnth
 
-        # If only one file is provided, generate an additional RBP file using sequence_generator.
-        if len(rbps_files) == 1:
-            sequence_generator.generate_rbp_file(RBP_DEF_FILE_NAME)
-            rbps_files.append(RBP_DEF_FILE_NAME)  # Add the generated file to the list.
+        # rbps_files.append(RBP_DEF_FILE_NAME)
 
-        # Iterate over each file in the provided list.
-        for file in self.rbps_files:
-            with open(file, 'r') as f:
-                for line in f:
-                    # Split each line to separate the RNA sequence from the rest of the data.
+        for file in tqdm(self.rbps_files):
+            with open(file, 'r', encoding='utf-8') as f:
+                detected_faulty_in_line = False
+                label = int(file[:-4].split('_')[-1])
+
+                for lindex, line in enumerate(f):
+
+                    if len(line) > 55:
+                        print(f"There is something wrong with line reading. read string with size {len(line)} in file {file} at line #{lindex}")
+                        detected_faulty_in_line = True
+                        continue
                     sequence, _ = line.strip().split(',')
-                    # Extract the label from the file name.
-                    label = int(file[:-4].split('_')[1])
-                    # Encode the DNA sequence using the custom encoder and convert it to a float tensor.
-                    encoded_sequence = sequence_encoder.encode_dna(sequence).float()
-                    # Convert the label to a long tensor and make it 0-based (by subtracting 1).
-                    tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1
-                    # Append the encoded sequence and label as a tuple to the data list.
-                    self.data.append((encoded_sequence, tensor_label))
+                    encoded_sequence, sequence_length = sequence_encoder.encode_embedding(sequence,
+                                                                                          self.possible_encodings,
+                                                                                          self.k,
+                                                                                          self.padded_sequence_max_legnth)
+                    # Extract the label
+                    # encoded_sequence, sequence_length = sequence_encoder.encode_dna(sequence)
+                    # encoded_sequence = encoded_sequence.long()
+                    tensor_label = torch.Tensor([label]).long().squeeze(-1) - 1  # Subtract 1 to make the labels 0-based
+                    self.data.append((encoded_sequence, sequence_length, tensor_label))
+                if detected_faulty_in_line:
+                    print(f"read {lindex} lines from file {file}")
 
     def __len__(self):
-        # Return the number of samples in the dataset.
         return len(self.data)
 
     def __getitem__(self, idx):
-        # Retrieve the encoded sequence and label at the specified index.
-        x, y = self.data[idx]
-        return x, y
+        x, length, y = self.data[idx]
+        return x, length, y
 
 
-# Main execution block for testing the dataset and dataloader.
 if __name__ == '__main__':
-    # TEST
     file1 = 'c:/Users/Tomer/Downloads/!htr-selex/RBP18_3.txt'
     file2 = 'c:/Users/Tomer/Downloads/!htr-selex/RBP13_3.txt'
     file3 = 'c:/Users/Tomer/Downloads/!htr-selex/RBP11_4.txt'
-    list = [file1, file2, file3]  # Create a list of file paths.
-
-    # Initialize the custom dataset with the list of files.
+    list = [file1, file2, file3]
     dataset = RbpSelexDataset(list)
-    # Create a DataLoader to batch and shuffle the data, setting the batch size to 64.
     dataloader = DataLoader(dataset, batch_size=64)
 
-    # Iterate through the batches of data and print the sequences and labels.
     for batch in dataloader:
         sequences, labels = batch
         print('Sequences:', sequences)

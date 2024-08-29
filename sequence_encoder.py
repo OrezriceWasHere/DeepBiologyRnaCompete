@@ -1,47 +1,70 @@
+import math
+from itertools import permutations, combinations, product
+
 import torch
 
-# Dictionaries for encoding DNA and RNA sequences into numerical representations.
-dna_encoding = {'A': 0, 'C': 1, 'G': 2, 'T': 3, 'X': 4, 'N': 5}  # Encoding for DNA.
-rna_encoding = {'A': 0, 'C': 1, 'G': 2, 'U': 3, 'X': 4, 'N': 5}  # Encoding for RNA.
-
-# A list to specify any characters to be ignored during encoding.
-ignore = []
-
-# Maximum length of the sequence to ensure uniform input size across batches.
+dna_encoding = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+rna_encoding = {'A': 0, 'C': 1, 'G': 2, 'U': 3}
+ignore = ['N']
 max_len = 41
 
 
-# Function to encode a sequence into a one-hot encoded tensor.
-def encode(sequence: str, mapping: dict) -> torch.Tensor:
-    # Pad the sequence with "X" characters to make it the same length as max_len.
+def all_possible_encodings(k: int, alphabet: list[str]) -> dict:
+    possible_kmers = list(product(alphabet, repeat=k)) + alphabet + ["X"]
+    return {"".join(value): index for index, value in enumerate(possible_kmers)}
+
+
+def encode(sequence: str, mapping: dict) -> tuple[torch.Tensor, torch.Tensor]:
     padded_seq = sequence.ljust(max_len, "X")
-    # Convert the sequence characters into numerical digits based on the mapping dictionary.
+    length = len(sequence)
     digits = torch.Tensor([mapping[x] for x in padded_seq if x not in ignore])
-    # Convert the digit sequence into a one-hot encoded tensor.
     one_hot = torch.nn.functional.one_hot(digits.to(torch.int64), num_classes=len(mapping))
+    tensor_length = torch.Tensor([length]).long()
+    return one_hot, tensor_length
 
-    return one_hot
+
+def encode_embedding(sequence, mapping, k, padded_sequence_max_legnth):
+    try:
+        for delete_char in ignore:
+            sequence = sequence.replace(delete_char, "")
+        k_length_pieces = math.floor(len(sequence) / k)
+        one_length_pieces = len(sequence) % k
+        empty_pieces = padded_sequence_max_legnth - k_length_pieces - one_length_pieces
+        original_length = k_length_pieces + one_length_pieces
+        k_length_encodings = [mapping[sequence[i * k: (i + 1) * k]]
+                              for i
+                              in range(k_length_pieces)]
+        one_length_encodings = [
+            mapping[sequence[k * k_length_pieces + i]]
+            for i in range(one_length_pieces)
+        ]
+        empty_encoding = [mapping["X"] for _ in range(empty_pieces)]
+        combined_encoding = k_length_encodings + one_length_encodings + empty_encoding
+
+        return torch.tensor(combined_encoding, dtype=torch.long), torch.Tensor([original_length]).long()
+
+    except KeyError as e:
+        print(f"Error: {e}")
+        raise e
 
 
-# Function to encode a DNA sequence using the dna_encoding dictionary.
 def encode_dna(sequence: str) -> torch.Tensor:
     return encode(sequence, dna_encoding)
 
 
-# Function to encode an RNA sequence, which internally uses the DNA encoding function.
 def encode_rna(sequence: str) -> torch.Tensor:
-    return encode_dna(sequence)  # Note: This uses the DNA encoding function directly, so consider renaming for clarity.
+    return encode_dna(sequence)
 
 
-# Utility function to stack a batch of data and targets into a single tensor.
 def stack_batch(batch):
-    # Extract the input data (sequences) from the batch.
     data = [item[0] for item in batch]
-    # Extract the target labels from the batch.
-    target = [item[1] for item in batch]
+    length = [item[1] for item in batch]
+    target = [item[2] for item in batch]
 
-    # Stack the list of tensors (data and target) into a single tensor for batch processing.
     data = torch.stack(data, dim=0)
+    length = torch.stack(length, dim=0)
     target = torch.stack(target, dim=0)
 
-    return data, target
+    pair = (data, length, target)
+
+    return pair

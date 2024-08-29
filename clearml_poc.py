@@ -1,21 +1,24 @@
+import json
 from os import environ as env
 import numpy as np
 
 ALLOW_CLEARML = True if env.get("ALLOW_CLEARML") == "yes" else False
 RUNNING_REMOTE = True if env.get("RUNNING_REMOTE") == "yes" else False
 
-
 def clearml_init(args=None, params=None):
     global execution_task
+    global output_model
     if ALLOW_CLEARML:
 
-        from clearml import Task
-        Task.add_requirements("requirements.txt")
+        from clearml import Task, OutputModel
+        # Task.add_requirements("requirements.txt")
         execution_task = Task.init(project_name="DeepBiologyRnaCompete",
 
                                    task_name="hidden layers - match an entity to another sentence to detect same entity",
                                    task_type=Task.TaskTypes.testing,
                                    )
+        output_model = OutputModel(task=execution_task, framework='PyTorch')
+
 
         if execution_task.running_locally():
             name = input("enter description for task:\n")
@@ -70,3 +73,11 @@ def get_param(param_name, section='General'):
     if ALLOW_CLEARML:
         return execution_task.get_parameter(f'{section}/{param_name}')
     return None
+
+
+
+def upload_model_to_clearml(model_path,  params):
+    if ALLOW_CLEARML:
+
+        execution_task.update_output_model(model_path=model_path)
+        output_model.update_design(config_dict=dict(vars(params)))

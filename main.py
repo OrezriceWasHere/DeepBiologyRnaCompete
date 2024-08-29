@@ -1,103 +1,83 @@
 import argparse
+from pathlib import Path
+from tqdm import tqdm, trange
 import torch
-from tqdm import trange
-import optuna
-import clearml_poc
-import hyper_parmas
-import rbpcompetesequencedataset
-import rbpselexdataset
-from prediction_model import PredictionModel
-from hyper_parmas import HyperParams
-from clearml_poc import clearml_init
 import trainer
-from sequence_encoder import stack_batch as collate_fn
+from hyper_parmas import HyperParams
+from prediction_model import PredictionModel
+from rbpselexdataset import RbpSelexDataset
+from rbpcompetesequencedataset import RbpCompeteSequenceNoIntensityDataset
 
+def load_data(params:HyperParams, rna_compete_file, slx_files):
+    print("loading train files")
+    train_dataset = RbpSelexDataset(
+        rbps_files=slx_files,
+        embedding_size=params.embedding_char_length,
+        padded_sequence_max_legnth=params.padding_max_size
+    )
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True)
+    print("done loading train files")
 
-def init(sequence_file, htr_selex_files, rna_compete_intensities, action, params, device):
-    print(f"action is :{action}")
-    train_dataset = rbpselexdataset.RbpSelexDataset(htr_selex_files)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True,
-                                               collate_fn=collate_fn)
-
-    test_dataset = rbpcompetesequencedataset.RbpCompeteSequenceDataset(rna_compete_intensities, sequence_file)
+    test_dataset = RbpCompeteSequenceNoIntensityDataset(
+        sequence_file=rna_compete_file,
+        k=params.embedding_char_length,
+        padded_sequence_max_legnth=params.padding_max_size
+    )
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
+    print("done loading test files")
 
-    if action == 'hyperparam_exploration':
-        hyper_parameter_exploration(train_loader, test_loader)
+    return train_loader, test_loader
 
-    elif action == 'default_training':
-        default_training(train_loader, test_loader, params)
+def main(output_file, rna_compete_file, slx_files):
+    params = HyperParams()
+    train_loader, predict_loader = load_data(params, rna_compete_file, slx_files)
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    model = PredictionModel(params).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 
+    path = "model.pt"
+    if Path(path).exists() and len(slx_files) < 4:
+        model.load_state_dict(torch.load(path, weights_only=True))
 
-def hyper_parameter_exploration(train_loader, test_loader):
-    def optuna_single_trial(trial):
-        params = hyper_parmas.optuna_suggest_hyperparams(trial)
-        print(f'current params are: {vars(params)}')
-        return default_training(train_loader, test_loader, params)
-
-    print("starting optuna")
-    study = optuna.create_study(direction="maximize")
-    study.optimize(optuna_single_trial, n_trials=30)
-
-    pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
-    complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
-
-    print("Study statistics: ")
-    print("  Number of finished trials: ", len(study.trials))
-    print("  Number of pruned trials: ", len(pruned_trials))
-    print("  Number of complete trials: ", len(complete_trials))
-
-    print("Best trial:")
-    trial = study.best_trial
-
-    print("  Value: ", trial.value)
-
-    print("  Params: ")
-    for key, value in trial.params.items():
-        print("    {}: {}".format(key, value))
-
-
-def default_training(train_loader, test_loader, params, model=None, optimizer=None):
-    if not model:
-        model = PredictionModel(params).to(device)
-
-    if not optimizer:
-        optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
-
-    pearson_correlation = 0
+    print("Start training")
     for epoch in trange(params.epochs):
         trainer.train(model, optimizer, train_loader, device, epoch, params)
-        pearson_correlation = trainer.test(model, test_loader, device, epoch, params)
 
-    return pearson_correlation
+    print("Start predicting")
+    with open(output_file, 'w') as f:
+        predict_generator = tqdm(trainer.predict(model, predict_loader, device), total=len(predict_loader))
+        for sequences, intensities in predict_generator:
+            for intensity in intensities:
+                f.write(f"{intensity}\n")
+
+    print(f"results were written to {output_file}. done")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('action',
-                        choices=['hyperparam_exploration', 'default_training'],
-                        nargs='?',
-                        default='default_training',
-                        help='action')
-    parser.add_argument('rna_compete_sequences',
-                        default="./data/RNAcompete_sequences_rc.txt",
-                        nargs='?',
+    parser = argparse.ArgumentParser(description='Process RNA compete and SLX files.')
+
+    parser.add_argument('output_file',
                         type=str,
-                        help='sequences file')
-    parser.add_argument('htr_selex_files',
-                        default=['./data/RBP1_1.txt',
-                                 './data/RBP1_2.txt',
-                                 './data/RBP1_3.txt',
-                                 './data/RBP1_4.txt', ],
-                        nargs='*',
-                        help='htr selex files')
-    default_rna_compete_intensities = './data/RBP1.txt'
+                        help='Output file ')
+
+    parser.add_argument('rna_compete_file',
+                        type=str,
+                        help='RNA compete file')
+
+    parser.add_argument('slx_files',
+                        type=str,
+                        nargs='+',
+                        help='SLX files')
+
     args = parser.parse_args()
-    params = HyperParams
-    clearml_init(args, params)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"device: {device}")
-    action = clearml_poc.get_param("action") or args.action
+    # Main logic to handle the parsed arguments
+    print(f'Output file: {args.output_file}')
+    print(f'RNA compete file: {args.rna_compete_file}')
+    print(f'SLX files: {args.slx_files}')
 
-    init(args.rna_compete_sequences, args.htr_selex_files, default_rna_compete_intensities, action, params, device)
+    main(
+        output_file=args.output_file,
+        rna_compete_file=args.rna_compete_file,
+        slx_files=args.slx_files
+   )
