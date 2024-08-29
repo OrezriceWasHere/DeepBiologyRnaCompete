@@ -1,12 +1,14 @@
 import math
 from itertools import permutations, combinations, product
-
 import torch
 
+# Define encoding mappings for DNA and RNA sequences.
 dna_encoding = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
 rna_encoding = {'A': 0, 'C': 1, 'G': 2, 'U': 3}
-ignore = ['N']
-max_len = 41
+ignore = ['N']  # Define characters to ignore during encoding.
+max_len = 41  # Define the maximum length for sequences, used for padding.
+
+
 
 
 def all_possible_encodings(k: int, alphabet: list[str]) -> dict:
@@ -48,23 +50,32 @@ def encode_embedding(sequence, mapping, k, padded_sequence_max_legnth):
         raise e
 
 
+# Function to encode a DNA sequence.
 def encode_dna(sequence: str) -> torch.Tensor:
     return encode(sequence, dna_encoding)
 
 
+# Function to encode an RNA sequence (uses DNA encoding logic).
 def encode_rna(sequence: str) -> torch.Tensor:
     return encode_dna(sequence)
 
 
+
+
+
+# Function to stack a batch of sequences, lengths, and targets into tensors.
 def stack_batch(batch):
+    # Extract data, lengths, and targets from the batch.
     data = [item[0] for item in batch]
     length = [item[1] for item in batch]
     target = [item[2] for item in batch]
 
+    # Stack the data, lengths, and targets along a new dimension.
     data = torch.stack(data, dim=0)
     length = torch.stack(length, dim=0)
     target = torch.stack(target, dim=0)
 
+    # Return the stacked tensors as a tuple.
     pair = (data, length, target)
 
     return pair
