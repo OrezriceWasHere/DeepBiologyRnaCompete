@@ -142,7 +142,7 @@ def default_training(train_loader: DataLoader | list[DataLoader], test_loader: D
 
 
 def overall_experiment(datasets_mapping, params: HyperParams):
-    testing_datasets = list(range(10, 38))
+    testing_datasets = list(range(38, 76))
     sum_pearson = 0
     count = 0
     for dataset_index in testing_datasets:
@@ -151,9 +151,9 @@ def overall_experiment(datasets_mapping, params: HyperParams):
         train_loader = DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True, collate_fn=collate_fn)
         model = PredictionModel(params).to(device)
         path = "model.pt"
-        # if Path(path).exists() and len(train_dataset.rbps_files) == 1:
-        #     print("loading model")
-        #     model.load_state_dict(torch.load(path, weights_only=True))
+        if Path(path).exists() and len(train_dataset.rbps_files) < 4:
+            print("loading model")
+            model.load_state_dict(torch.load(path, weights_only=True))
 
         test_dataset = dataset_index_to_testset(datasets_mapping, dataset_index, params)
         test_loader = DataLoader(test_dataset, batch_size=params.batch_size, shuffle=True)
@@ -217,5 +217,5 @@ if __name__ == "__main__":
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
     action = clearml_poc.get_param("action") or args.action
-    action = "several_datasets"
+    action = "test_all"
     init(args.rna_compete_sequences, args.htr_selex_files, args.rna_intensities, action, params, device)
